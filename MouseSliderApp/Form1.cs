@@ -91,7 +91,7 @@ namespace MouseSliderApp
 
         private static readonly Color AccentPrimary = Color.FromArgb(59, 130, 246);   // primary blue
         private static readonly Color AccentPrimarySoft = Color.FromArgb(37, 99, 235);
-        private static readonly Color AccentPositive = Color.FromArgb(34, 197, 94);   // green (not used for Start anymore but kept)
+        private static readonly Color AccentPositive = Color.FromArgb(34, 197, 94);   // green
         private static readonly Color AccentDanger = Color.FromArgb(239, 68, 68);    // red
         private static readonly Color TextMuted = Color.FromArgb(148, 163, 184);
 
@@ -571,18 +571,24 @@ namespace MouseSliderApp
             {
                 Dock = DockStyle.Fill,
                 BackColor = BgSettings,
-                Padding = new Padding(20)
+                Padding = new Padding(0)
+            };
+
+            // inner layout panel that we will center
+            var settingsLayout = new Panel
+            {
+                BackColor = Color.Transparent
             };
 
             // hero frame + big image
             var operatorFrame = new Panel
             {
-                Location = new Point(0, 0),
                 Size = new Size(280, 300),
                 BackColor = CardNormalColor,
                 Padding = new Padding(12)
             };
             ApplyRoundedCorners(operatorFrame, 12);
+            operatorFrame.Location = new Point(0, 0);
 
             _pictureProfile = new PictureBox
             {
@@ -598,19 +604,19 @@ namespace MouseSliderApp
                 AutoSize = true,
                 Text = "Current operator",
                 ForeColor = TextMuted,
-                Font = new Font("Segoe UI", 8F, FontStyle.Regular),
-                Location = new Point(operatorFrame.Left + 4, operatorFrame.Bottom + 6)
+                Font = new Font("Segoe UI", 8F, FontStyle.Regular)
             };
+            operatorCaption.Location = new Point(operatorFrame.Left + 4, operatorFrame.Bottom + 6);
 
             // movement card (without start button)
             _movementCard = new Panel
             {
                 BackColor = CardNormalColor,
                 Size = new Size(460, 200),
-                Location = new Point(operatorFrame.Right + 20, 0),
                 Padding = new Padding(10)
             };
             ApplyRoundedCorners(_movementCard, 8);
+            _movementCard.Location = new Point(operatorFrame.Right + 40, operatorFrame.Top);
 
             var movementTitle = new Label
             {
@@ -689,10 +695,10 @@ namespace MouseSliderApp
             {
                 BackColor = CardNormalColor,
                 Size = new Size(460, 220),
-                Location = new Point(_movementCard.Left, _movementCard.Bottom + 15),
                 Padding = new Padding(10)
             };
             ApplyRoundedCorners(_setupCard, 8);
+            _setupCard.Location = new Point(_movementCard.Left, _movementCard.Bottom + 20);
 
             var setupTitle = new Label
             {
@@ -767,13 +773,24 @@ namespace MouseSliderApp
             _setupCard.Controls.Add(_buttonSetKey2);
             _setupCard.Controls.Add(_buttonSaveSetup2);
 
-            content.Controls.Add(operatorFrame);
-            content.Controls.Add(operatorCaption);
-            content.Controls.Add(_movementCard);
-            content.Controls.Add(_setupCard);
+            // put everything into the centered layout panel
+            settingsLayout.Controls.Add(operatorFrame);
+            settingsLayout.Controls.Add(operatorCaption);
+            settingsLayout.Controls.Add(_movementCard);
+            settingsLayout.Controls.Add(_setupCard);
 
+            // size of the inner layout based on children
+            int layoutWidth = Math.Max(operatorFrame.Right, _movementCard.Right);
+            int layoutHeight = Math.Max(operatorFrame.Bottom + 30, _setupCard.Bottom);
+            settingsLayout.Size = new Size(layoutWidth, layoutHeight);
+
+            content.Controls.Add(settingsLayout);
             _pageSettings.Controls.Add(content);
             _pageSettings.Controls.Add(header);
+
+            // center the layout inside the content panel
+            content.Resize += (s, e) => CenterInnerPanel(settingsLayout, content);
+            CenterInnerPanel(settingsLayout, content);
 
             SyncHorizontalFromSlider();
             SyncVerticalFromSlider();
@@ -842,6 +859,15 @@ namespace MouseSliderApp
 
             control.HandleCreated += UpdateRegion;
             control.Resize += UpdateRegion;
+        }
+
+        private void CenterInnerPanel(Control inner, Control outer)
+        {
+            int x = (outer.ClientSize.Width - inner.Width) / 2;
+            int y = (outer.ClientSize.Height - inner.Height) / 2;
+            if (x < 0) x = 0;
+            if (y < 0) y = 0;
+            inner.Location = new Point(x, y);
         }
 
         // smooth drawing (reduce flicker)
