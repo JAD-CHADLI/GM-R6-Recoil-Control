@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
@@ -442,8 +442,6 @@ namespace MouseSliderApp
             int totalContentHeight = contentHeight + _profilesPanel.Padding.Vertical;
             _profilesPanel.Height = Math.Max(_profilesContainer.ClientSize.Height, totalContentHeight);
 
-
-
             // how far we are allowed to scroll
             int maxOffset = Math.Max(0, totalContentHeight - viewportHeight);
             if (_profilesScrollOffset > maxOffset)
@@ -471,7 +469,6 @@ namespace MouseSliderApp
             // move the whole grid up/down
             _profilesPanel.Location = new Point(0, -_profilesScrollOffset);
         }
-
 
         private void ProfilesScrollBar_Scroll(object? sender, ScrollEventArgs e)
         {
@@ -1062,31 +1059,7 @@ namespace MouseSliderApp
             };
             ApplyRoundedCorners(card, 8);
 
-            var thumb = new PictureBox
-            {
-                Width = 150,
-                Height = 100,
-                Location = new Point(10, 10),
-                SizeMode = PictureBoxSizeMode.Zoom,
-                BackColor = Color.FromArgb(15, 23, 42)
-            };
-            LoadThumbnailImage(thumb, profile.ImageFileName);
-
-            var nameLabel = new Label
-            {
-                AutoSize = false,
-                Width = 150,
-                Height = 36,
-                Location = new Point(10, 115),
-                Text = profile.Name,
-                TextAlign = ContentAlignment.TopCenter
-            };
-
-            var modifyButton = CreateFlatButton("Modify", 120, 24);
-            modifyButton.Location = new Point(25, 150);
-            modifyButton.Click += (s, e) => StartModifyProfile(profile, card);
-
-            // ACTIVE badge (idea 5)
+            // ===== ACTIVE badge – centered at the top =====
             var activeBadge = new Label
             {
                 Name = ActiveBadgeName,
@@ -1102,23 +1075,74 @@ namespace MouseSliderApp
             };
             ApplyRoundedCorners(activeBadge, 9);
 
-            activeBadge.Location = new Point(card.Width - activeBadge.Width - 8, 8);
+            // center horizontally
+            activeBadge.Location = new Point(
+                (card.Width - activeBadge.Width) / 2,
+                8
+            );
+
             card.Resize += (s, e) =>
             {
-                activeBadge.Location = new Point(card.Width - activeBadge.Width - 8, 8);
+                activeBadge.Location = new Point(
+                    (card.Width - activeBadge.Width) / 2,
+                    8
+                );
             };
 
+            // ===== Thumbnail (below badge) =====
+            var thumb = new PictureBox
+            {
+                Width = 150,
+                Height = 100,
+                Location = new Point(10, activeBadge.Bottom + 5),
+                SizeMode = PictureBoxSizeMode.Zoom,
+                BackColor = Color.FromArgb(15, 23, 42)
+            };
+            LoadThumbnailImage(thumb, profile.ImageFileName);
+
+            // ===== Name label =====
+            var nameLabel = new Label
+            {
+                AutoSize = false,
+                Width = 150,
+                Height = 18,
+                Location = new Point(10, thumb.Bottom + 5),
+                Text = profile.Name,
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+
+            // ===== MODIFY button (simple flat button, no rounded Region) =====
+            var modifyButton = new Button
+            {
+                Text = "Modify",
+                Width = 120,
+                Height = 24,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(55, 65, 81),
+                ForeColor = Color.White,
+                Location = new Point(
+                    (card.Width - 120) / 2,
+                    nameLabel.Bottom + 5
+                ),
+                Cursor = Cursors.Hand
+            };
+            modifyButton.FlatAppearance.BorderSize = 0;
+            modifyButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(75, 85, 99);
+            modifyButton.FlatAppearance.MouseDownBackColor = Color.FromArgb(31, 41, 55);
+            modifyButton.Click += (s, e) => StartModifyProfile(profile, card);
+
+            // ===== Add controls to card =====
+            card.Controls.Add(activeBadge);
             card.Controls.Add(thumb);
             card.Controls.Add(nameLabel);
             card.Controls.Add(modifyButton);
-            card.Controls.Add(activeBadge);
 
-            // click on card/image/name = select only
+            // ===== Click on card / image / name = select only =====
             card.MouseClick += ProfileCard_Click;
             thumb.MouseClick += ProfileCard_Click;
             nameLabel.MouseClick += ProfileCard_Click;
 
-            // Hover effect (idea 1)
+            // ===== Hover effect for card (idea 1) =====
             void HandleEnter(object? s, EventArgs e)
             {
                 if (card != _selectedProfileCard)
@@ -1131,15 +1155,15 @@ namespace MouseSliderApp
                     card.BackColor = CardNormalColor;
             }
 
-            card.MouseEnter += HandleEnter;
-            card.MouseLeave += HandleLeave;
-            thumb.MouseEnter += HandleEnter;
-            thumb.MouseLeave += HandleLeave;
-            nameLabel.MouseEnter += HandleEnter;
-            nameLabel.MouseLeave += HandleLeave;
+            foreach (Control c in new Control[] { card, thumb, nameLabel, modifyButton })
+            {
+                c.MouseEnter += HandleEnter;
+                c.MouseLeave += HandleLeave;
+            }
 
             return card;
         }
+
 
         private void ProfileCard_Click(object? sender, MouseEventArgs e)
         {
