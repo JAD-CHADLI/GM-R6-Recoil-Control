@@ -378,7 +378,7 @@ namespace MouseSliderApp
                 FlatStyle = FlatStyle.Flat,
                 BackColor = AccentDanger,
                 ForeColor = Color.White,
-                Anchor = AnchorStyles.Top | AnchorStyles.Right
+                Anchor = AnchorStyles.Top
             };
             _buttonResetAll.FlatAppearance.BorderSize = 0;
             _buttonResetAll.Click += ButtonResetAll_Click;
@@ -392,7 +392,7 @@ namespace MouseSliderApp
                 FlatStyle = FlatStyle.Flat,
                 BackColor = AccentPrimary,
                 ForeColor = Color.White,
-                Anchor = AnchorStyles.Top | AnchorStyles.Right
+                Anchor = AnchorStyles.Top
             };
             _buttonStart.FlatAppearance.BorderSize = 0;
             _buttonStart.Click += ButtonStart_Click;
@@ -411,28 +411,42 @@ namespace MouseSliderApp
             header.Controls.Add(_buttonAbout);
             header.Controls.Add(_buttonTutorial);
 
+            // === UPDATED LAYOUT: Start + Reset centered, About + Tutorial on right ===
             header.Resize += (s, e) =>
             {
-                int x = header.Width - 20;
+                int top = 15;
+                int marginRight = 20;
+                int gap = 10;
 
-                _buttonResetAll.Location = new Point(
-                    x - _buttonResetAll.Width,
-                    15);
-                x = _buttonResetAll.Left - 10;
+                // Right side: Tutorial then About
+                int xRight = header.Width - marginRight;
 
-                _buttonStart.Location = new Point(
-                    x - _buttonStart.Width,
-                    15);
-                x = _buttonStart.Left - 10;
+                if (_buttonTutorial != null)
+                {
+                    _buttonTutorial.Location = new Point(
+                        xRight - _buttonTutorial.Width,
+                        top);
+                    xRight = _buttonTutorial.Left - gap;
+                }
 
-                _buttonTutorial.Location = new Point(
-                    x - _buttonTutorial.Width,
-                    15);
-                x = _buttonTutorial.Left - 10;
+                if (_buttonAbout != null)
+                {
+                    _buttonAbout.Location = new Point(
+                        xRight - _buttonAbout.Width,
+                        top);
+                }
 
-                _buttonAbout.Location = new Point(
-                    x - _buttonAbout.Width,
-                    15);
+                // Center group: Start + RESET ALL
+                if (_buttonStart != null && _buttonResetAll != null)
+                {
+                    int groupWidth = _buttonStart.Width + gap + _buttonResetAll.Width;
+                    int centerX = header.Width / 2;
+                    int groupLeft = centerX - groupWidth / 2;
+                    if (groupLeft < 0) groupLeft = 0;
+
+                    _buttonStart.Location = new Point(groupLeft, top);
+                    _buttonResetAll.Location = new Point(_buttonStart.Right + gap, top);
+                }
             };
 
             header.Paint += (s, e) =>
@@ -463,12 +477,7 @@ namespace MouseSliderApp
                 }
             };
 
-            _labelCategory = new Label
-            {
-                AutoSize = true,
-                Text = "Side",
-                Font = new Font("Segoe UI", 10F, FontStyle.Bold)
-            };
+
 
             _buttonCategoryA = CreateFlatButton("Attackers", 100, 28);
             _buttonCategoryB = CreateFlatButton("Defenders", 100, 28);
@@ -508,7 +517,6 @@ namespace MouseSliderApp
                 ForeColor = TextMuted
             };
 
-            topBar.Controls.Add(_labelCategory);
             topBar.Controls.Add(_buttonCategoryA);
             topBar.Controls.Add(_buttonCategoryB);
             topBar.Controls.Add(_searchBox);
@@ -581,16 +589,15 @@ namespace MouseSliderApp
                 _searchBox.Location = new Point(15, y + 3);
             }
 
-            if (_labelCategory == null || _buttonCategoryA == null || _buttonCategoryB == null)
+            // center: Attackers / Defenders ONLY (no "Side" text)
+            if (_buttonCategoryA == null || _buttonCategoryB == null)
                 return;
 
-            // center: side toggle
-            int totalWidth = _labelCategory.Width + gap + _buttonCategoryA.Width + gap + _buttonCategoryB.Width;
+            int totalWidth = _buttonCategoryA.Width + gap + _buttonCategoryB.Width;
             int startX = (_profilesTopBar.ClientSize.Width - totalWidth) / 2;
             if (startX < 10) startX = 10;
 
-            _labelCategory.Location = new Point(startX, y + 3);
-            _buttonCategoryA.Location = new Point(_labelCategory.Right + gap, y);
+            _buttonCategoryA.Location = new Point(startX, y);
             _buttonCategoryB.Location = new Point(_buttonCategoryA.Right + gap, y);
 
             // right: selected profile + setup
@@ -607,6 +614,7 @@ namespace MouseSliderApp
                 rightX - _labelSelectedSetup.Width,
                 _labelSelectedProfile.Bottom + 2);
         }
+
 
         // center profiles + sync custom scrollbar
         private void ProfilesPanel_Resize(object? sender, EventArgs e)
@@ -1107,159 +1115,161 @@ namespace MouseSliderApp
         }
 
         // ===== About page =====
-private void BuildAboutPage()
-{
-    var header = new Panel
-    {
-        Dock = DockStyle.Top,
-        Height = 60,
-        BackColor = BgHeader
-    };
-
-    var backButton = new Button
-    {
-        Text = "← Back",
-        Width = 80,
-        Height = 30,
-        FlatStyle = FlatStyle.Flat,
-        BackColor = Color.FromArgb(55, 65, 81),
-        ForeColor = Color.White,
-        Location = new Point(15, 15)
-    };
-    backButton.FlatAppearance.BorderSize = 0;
-    ApplyRoundedCorners(backButton, 6);
-    backButton.Click += (s, e) => ShowProfilesPage();
-
-    var titleLabel = new Label
-    {
-        AutoSize = true,
-        Text = "About",
-        Font = new Font("Segoe UI", 12F, FontStyle.Bold),
-        ForeColor = Color.White,
-        Location = new Point(backButton.Right + 10, 19)
-    };
-
-    header.Controls.Add(backButton);
-    header.Controls.Add(titleLabel);
-
-    var content = new Panel
-    {
-        Dock = DockStyle.Fill,
-        BackColor = BgSettings
-    };
-
-    var layout = new Panel
-    {
-        BackColor = Color.Transparent,
-        Size = new Size(500, 320)
-    };
-
-    var logoBox = new PictureBox
-    {
-        Size = new Size(180, 180),
-        SizeMode = PictureBoxSizeMode.Zoom,
-        BackColor = Color.Transparent
-    };
-
-    // ✅ Use a different logo ONLY for the About page
-    try
-    {
-        string aboutLogoPath = Path.Combine(_imagesFolder, "AboutLogo.png");
-        if (File.Exists(aboutLogoPath))
+        private void BuildAboutPage()
         {
-            using (var img = Image.FromFile(aboutLogoPath))
+            var header = new Panel
             {
-                logoBox.Image = new Bitmap(img);
+                Dock = DockStyle.Top,
+                Height = 60,
+                BackColor = BgHeader
+            };
+
+            var backButton = new Button
+            {
+                Text = "← Back",
+                Width = 80,
+                Height = 30,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(55, 65, 81),
+                ForeColor = Color.White,
+                Location = new Point(15, 15)
+            };
+            backButton.FlatAppearance.BorderSize = 0;
+            ApplyRoundedCorners(backButton, 6);
+            backButton.Click += (s, e) => ShowProfilesPage();
+
+            var titleLabel = new Label
+            {
+                AutoSize = true,
+                Text = "About",
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                ForeColor = Color.White,
+                Location = new Point(backButton.Right + 10, 19)
+            };
+
+            header.Controls.Add(backButton);
+            header.Controls.Add(titleLabel);
+
+            var content = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = BgSettings
+            };
+
+            var layout = new Panel
+            {
+                BackColor = Color.Transparent,
+                Size = new Size(500, 320)
+            };
+
+            var logoBox = new PictureBox
+            {
+                Size = new Size(180, 180),
+                SizeMode = PictureBoxSizeMode.Zoom,
+                BackColor = Color.Transparent
+            };
+
+            // ✅ Make About logo circular
+            MakePictureCircular(logoBox);
+
+            // ✅ Use a different logo ONLY for the About page
+            try
+            {
+                string aboutLogoPath = Path.Combine(_imagesFolder, "AboutLogo.png");
+                if (File.Exists(aboutLogoPath))
+                {
+                    using (var img = Image.FromFile(aboutLogoPath))
+                    {
+                        logoBox.Image = new Bitmap(img);
+                    }
+                }
             }
-        }
-    }
-    catch
-    {
-        // ignore, we'll just fall back to the drawn placeholder
-    }
-
-    // If no custom AboutLogo.png found, draw a simple placeholder
-    if (logoBox.Image == null)
-    {
-        logoBox.Paint += (s, e) =>
-        {
-            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            using (var pen = new Pen(AccentPrimarySoft, 3))
+            catch
             {
-                e.Graphics.DrawRectangle(pen, 8, 8, logoBox.Width - 16, logoBox.Height - 16);
+                // ignore, we'll just fall back to the drawn placeholder
             }
-        };
-    }
 
-    var madeByLabel = new Label
-    {
-        AutoSize = true,
-        Text = "Made by GAMMO",
-        Font = new Font("Segoe UI", 14F, FontStyle.Bold),
-        ForeColor = Color.White
-    };
-
-    var githubLink = new LinkLabel
-    {
-        AutoSize = true,
-        Text = "GitHub: JAD-CHADLI",
-        Font = new Font("Segoe UI", 10F, FontStyle.Regular),
-        LinkColor = AccentPrimary,
-        ActiveLinkColor = Color.White,
-        VisitedLinkColor = AccentPrimarySoft
-    };
-    githubLink.LinkBehavior = LinkBehavior.HoverUnderline;
-    githubLink.LinkClicked += (s, e) =>
-    {
-        try
-        {
-            Process.Start(new ProcessStartInfo
+            // If no custom AboutLogo.png found, draw a simple placeholder
+            if (logoBox.Image == null)
             {
-                FileName = "https://github.com/JAD-CHADLI",
-                UseShellExecute = true
-            });
+                logoBox.Paint += (s, e) =>
+                {
+                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                    using (var pen = new Pen(AccentPrimarySoft, 3))
+                    {
+                        e.Graphics.DrawRectangle(pen, 8, 8, logoBox.Width - 16, logoBox.Height - 16);
+                    }
+                };
+            }
+
+            var madeByLabel = new Label
+            {
+                AutoSize = true,
+                Text = "Made by GAMMO",
+                Font = new Font("Segoe UI", 14F, FontStyle.Bold),
+                ForeColor = Color.White
+            };
+
+            var githubLink = new LinkLabel
+            {
+                AutoSize = true,
+                Text = "GitHub: JAD-CHADLI",
+                Font = new Font("Segoe UI", 10F, FontStyle.Regular),
+                LinkColor = AccentPrimary,
+                ActiveLinkColor = Color.White,
+                VisitedLinkColor = AccentPrimarySoft
+            };
+            githubLink.LinkBehavior = LinkBehavior.HoverUnderline;
+            githubLink.LinkClicked += (s, e) =>
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = "https://github.com/JAD-CHADLI",
+                        UseShellExecute = true
+                    });
+                }
+                catch
+                {
+                    MessageBox.Show(
+                        "Could not open the GitHub link.",
+                        "Error",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                }
+            };
+
+            layout.Controls.Add(logoBox);
+            layout.Controls.Add(madeByLabel);
+            layout.Controls.Add(githubLink);
+
+            void Relayout()
+            {
+                logoBox.Location = new Point(
+                    (layout.Width - logoBox.Width) / 2,
+                    10);
+
+                madeByLabel.Location = new Point(
+                    (layout.Width - madeByLabel.Width) / 2,
+                    logoBox.Bottom + 15);
+
+                githubLink.Location = new Point(
+                    (layout.Width - githubLink.Width) / 2,
+                    madeByLabel.Bottom + 10);
+            }
+
+            layout.Resize += (s, e) => Relayout();
+            Relayout();
+
+            content.Controls.Add(layout);
+
+            content.Resize += (s, e) => CenterInnerPanel(layout, content);
+            CenterInnerPanel(layout, content);
+
+            _pageAbout.Controls.Add(content);
+            _pageAbout.Controls.Add(header);
         }
-        catch
-        {
-            MessageBox.Show(
-                "Could not open the GitHub link.",
-                "Error",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Error);
-        }
-    };
-
-    layout.Controls.Add(logoBox);
-    layout.Controls.Add(madeByLabel);
-    layout.Controls.Add(githubLink);
-
-    void Relayout()
-    {
-        logoBox.Location = new Point(
-            (layout.Width - logoBox.Width) / 2,
-            10);
-
-        madeByLabel.Location = new Point(
-            (layout.Width - madeByLabel.Width) / 2,
-            logoBox.Bottom + 15);
-
-        githubLink.Location = new Point(
-            (layout.Width - githubLink.Width) / 2,
-            madeByLabel.Bottom + 10);
-    }
-
-    layout.Resize += (s, e) => Relayout();
-    Relayout();
-
-    content.Controls.Add(layout);
-
-    content.Resize += (s, e) => CenterInnerPanel(layout, content);
-    CenterInnerPanel(layout, content);
-
-    _pageAbout.Controls.Add(content);
-    _pageAbout.Controls.Add(header);
-}
-
 
         // ===== Tutorial page =====
         private void BuildTutorialPage()
@@ -1309,11 +1319,12 @@ private void BuildAboutPage()
                 Size = new Size(700, 400)
             };
 
+            // ✅ Bigger fonts here
             var tutorialTitle = new Label
             {
                 AutoSize = true,
                 Text = "How to use Mouse Slider Controller",
-                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                Font = new Font("Segoe UI", 14F, FontStyle.Bold),
                 ForeColor = Color.White
             };
 
@@ -1322,7 +1333,7 @@ private void BuildAboutPage()
                 AutoSize = true,
                 MaximumSize = new Size(650, 0),
                 ForeColor = TextMuted,
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
+                Font = new Font("Segoe UI", 11F, FontStyle.Regular),
                 Text =
                     "1. Choose a side (Attackers / Defenders) at the top.\n" +
                     "2. Use the search box on the left or scroll to find the operator you want.\n" +
@@ -1422,6 +1433,25 @@ private void BuildAboutPage()
 
             control.HandleCreated += UpdateRegion;
             control.Resize += UpdateRegion;
+        }
+
+        // ✅ Helper to make a PictureBox circular (for About logo)
+        private void MakePictureCircular(PictureBox pb)
+        {
+            void UpdateRegion(object? sender, EventArgs e)
+            {
+                if (pb.Width <= 0 || pb.Height <= 0)
+                    return;
+
+                using (var path = new GraphicsPath())
+                {
+                    path.AddEllipse(0, 0, pb.Width - 1, pb.Height - 1);
+                    pb.Region = new Region(path);
+                }
+            }
+
+            pb.HandleCreated += UpdateRegion;
+            pb.Resize += UpdateRegion;
         }
 
         private void CenterInnerPanel(Control inner, Control outer)
