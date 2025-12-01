@@ -19,8 +19,11 @@ namespace MouseSliderApp
 
         // Container + custom scrollbar for profiles
         private Panel _profilesContainer = null!;
-        private VScrollBar _profilesScrollBar = null!;
+        private Panel _profilesScrollTrack = null!;   // fake scrollbar track
+        private Panel _profilesScrollThumb = null!;   // fake scrollbar thumb
         private int _profilesScrollOffset = 0;
+        private int _profilesMaxScrollOffset = 0;
+        private const int ProfilesScrollStep = 40;
 
         // ====== Movement controls (Settings page) ======
         private Label _labelHorizontal = null!;
@@ -43,9 +46,16 @@ namespace MouseSliderApp
         private Label _labelCategory = null!;
         private Button _buttonCategoryA = null!;
         private Button _buttonCategoryB = null!;
+        private TextBox _searchBox = null!;
         private Label _labelSelectedProfile = null!;
+        private Label _labelSelectedSetup = null!;
         private FlowLayoutPanel _profilesPanel = null!;
         private Panel? _selectedProfileCard;
+        private Panel _profilesTopBar = null!;
+
+        // search placeholder state
+        private bool _searchHasPlaceholder = true;
+        private const string SearchPlaceholder = "Search...";
 
         // ====== Setups + Keybinds (Settings page) ======
         private Label _labelActiveSetup = null!;
@@ -141,7 +151,6 @@ namespace MouseSliderApp
             TryEnableDarkTitleBar();
         }
 
-
         private class ProfileData
         {
             public string Category { get; set; } = "";
@@ -158,6 +167,7 @@ namespace MouseSliderApp
         private readonly Dictionary<Profile, Panel> _profileCardCache = new(); // cache cards
 
         private string _currentCategory = "A";
+        private string _currentSearchText = string.Empty;
         private Profile? _currentProfile;
 
         private int _currentSetupIndex = 1;
@@ -231,11 +241,6 @@ namespace MouseSliderApp
                 // If it fails (older Windows), just ignore – app still works
             }
         }
-
-
-
-
-
 
         // ==========================================================
         // UI setup
@@ -395,7 +400,7 @@ namespace MouseSliderApp
                 }
             };
 
-            // top bar with category + selected label
+            // top bar with category + selected label + search
             var topBar = new Panel
             {
                 Dock = DockStyle.Top,
@@ -403,6 +408,7 @@ namespace MouseSliderApp
                 BackColor = BgTopBar,
                 Padding = new Padding(15, 10, 15, 5)
             };
+            _profilesTopBar = topBar;
 
             topBar.Paint += (s, e) =>
             {
@@ -429,6 +435,21 @@ namespace MouseSliderApp
             _buttonCategoryA.Click += (s, e) => ShowCategory("A");
             _buttonCategoryB.Click += (s, e) => ShowCategory("B");
 
+            // search box with placeholder
+            _searchBox = new TextBox
+            {
+                Width = 170,
+                Height = 24,
+                BorderStyle = BorderStyle.FixedSingle,
+                BackColor = Color.FromArgb(15, 23, 42),
+                ForeColor = TextMuted,
+                Text = SearchPlaceholder
+            };
+            _searchHasPlaceholder = true;
+            _searchBox.GotFocus += SearchBox_GotFocus;
+            _searchBox.LostFocus += SearchBox_LostFocus;
+            _searchBox.TextChanged += SearchBox_TextChanged;
+
             _labelSelectedProfile = new Label
             {
                 AutoSize = true,
@@ -436,45 +457,46 @@ namespace MouseSliderApp
                 ForeColor = TextMuted
             };
 
+            _labelSelectedSetup = new Label
+            {
+                AutoSize = true,
+                Text = "Setup: (none)",
+                ForeColor = TextMuted
+            };
+
             topBar.Controls.Add(_labelCategory);
             topBar.Controls.Add(_buttonCategoryA);
             topBar.Controls.Add(_buttonCategoryB);
+            topBar.Controls.Add(_searchBox);
             topBar.Controls.Add(_labelSelectedProfile);
+            topBar.Controls.Add(_labelSelectedSetup);
 
-            topBar.Resize += (s, e) =>
-            {
-                int gap = 10;
-                int y = 10;
+            topBar.Resize += (s, e) => LayoutProfilesTopBar();
+            LayoutProfilesTopBar();
 
-                int totalWidth = _labelCategory.Width + gap + _buttonCategoryA.Width + gap + _buttonCategoryB.Width;
-                int startX = (topBar.ClientSize.Width - totalWidth) / 2;
-                if (startX < 10) startX = 10;
-
-                _labelCategory.Location = new Point(startX, y + 3);
-                _buttonCategoryA.Location = new Point(_labelCategory.Right + gap, y);
-                _buttonCategoryB.Location = new Point(_buttonCategoryA.Right + gap, y);
-
-                _labelSelectedProfile.Location = new Point(
-                    topBar.ClientSize.Width - _labelSelectedProfile.Width - 20,
-                    y + 3);
-            };
-
-            // profile cards container + custom scrollbar
+            // profile cards container + FAKE custom scrollbar
             _profilesContainer = new Panel
             {
                 Dock = DockStyle.Fill,
                 BackColor = BgMain
             };
 
-            _profilesScrollBar = new VScrollBar
+            _profilesScrollTrack = new Panel
             {
                 Dock = DockStyle.Right,
-                Width = 12,
-                SmallChange = 20,
-                LargeChange = 60,
+                Width = 6,
                 BackColor = BgHeader
             };
-            _profilesScrollBar.Scroll += ProfilesScrollBar_Scroll;
+
+            _profilesScrollThumb = new Panel
+            {
+                Width = _profilesScrollTrack.Width,
+                Height = 40,
+                BackColor = AccentPrimarySoft,
+                Visible = false
+            };
+            ApplyRoundedCorners(_profilesScrollThumb, 3);
+            _profilesScrollTrack.Controls.Add(_profilesScrollThumb);
 
             _profilesPanel = new FlowLayoutPanel
             {
@@ -491,7 +513,7 @@ namespace MouseSliderApp
             _profilesPanel.MouseWheel += ProfilesPanel_MouseWheel;
 
             _profilesContainer.Controls.Add(_profilesPanel);
-            _profilesContainer.Controls.Add(_profilesScrollBar);
+            _profilesContainer.Controls.Add(_profilesScrollTrack);
             _profilesContainer.Resize += ProfilesContainer_Resize;
 
             _pageProfiles.Controls.Add(_profilesContainer);
@@ -499,12 +521,55 @@ namespace MouseSliderApp
             _pageProfiles.Controls.Add(header);
         }
 
+        // Lay out the top bar whenever size or text changes
+        private void LayoutProfilesTopBar()
+        {
+            if (_profilesTopBar == null)
+                return;
+
+            int gap = 10;
+            int y = 10;
+            int rightMargin = 20;
+
+            // left: search box
+            if (_searchBox != null)
+            {
+                _searchBox.Location = new Point(15, y + 3);
+            }
+
+            if (_labelCategory == null || _buttonCategoryA == null || _buttonCategoryB == null)
+                return;
+
+            // center: side toggle
+            int totalWidth = _labelCategory.Width + gap + _buttonCategoryA.Width + gap + _buttonCategoryB.Width;
+            int startX = (_profilesTopBar.ClientSize.Width - totalWidth) / 2;
+            if (startX < 10) startX = 10;
+
+            _labelCategory.Location = new Point(startX, y + 3);
+            _buttonCategoryA.Location = new Point(_labelCategory.Right + gap, y);
+            _buttonCategoryB.Location = new Point(_buttonCategoryA.Right + gap, y);
+
+            // right: selected profile + setup
+            if (_labelSelectedProfile == null || _labelSelectedSetup == null)
+                return;
+
+            int rightX = _profilesTopBar.ClientSize.Width - rightMargin;
+
+            _labelSelectedProfile.Location = new Point(
+                rightX - _labelSelectedProfile.Width,
+                y + 0);
+
+            _labelSelectedSetup.Location = new Point(
+                rightX - _labelSelectedSetup.Width,
+                _labelSelectedProfile.Bottom + 2);
+        }
+
         // center profiles + sync custom scrollbar
         private void ProfilesPanel_Resize(object? sender, EventArgs e)
         {
-            if (_profilesContainer != null && _profilesScrollBar != null)
+            if (_profilesContainer != null && _profilesScrollTrack != null)
             {
-                _profilesPanel.Width = _profilesContainer.ClientSize.Width - _profilesScrollBar.Width;
+                _profilesPanel.Width = _profilesContainer.ClientSize.Width - _profilesScrollTrack.Width;
             }
 
             CenterProfiles();
@@ -513,9 +578,9 @@ namespace MouseSliderApp
 
         private void ProfilesContainer_Resize(object? sender, EventArgs e)
         {
-            if (_profilesPanel != null && _profilesScrollBar != null)
+            if (_profilesPanel != null && _profilesScrollTrack != null)
             {
-                _profilesPanel.Width = _profilesContainer.ClientSize.Width - _profilesScrollBar.Width;
+                _profilesPanel.Width = _profilesContainer.ClientSize.Width - _profilesScrollTrack.Width;
             }
             CenterProfiles();
             UpdateProfilesScrollBar();
@@ -555,7 +620,7 @@ namespace MouseSliderApp
 
         private void UpdateProfilesScrollBar()
         {
-            if (_profilesContainer == null || _profilesPanel == null || _profilesScrollBar == null)
+            if (_profilesContainer == null || _profilesPanel == null)
                 return;
 
             _profilesPanel.PerformLayout();
@@ -574,58 +639,66 @@ namespace MouseSliderApp
             _profilesPanel.Height = Math.Max(_profilesContainer.ClientSize.Height, totalContentHeight);
 
             int maxOffset = Math.Max(0, totalContentHeight - viewportHeight);
+            _profilesMaxScrollOffset = maxOffset;
+
             if (_profilesScrollOffset > maxOffset)
                 _profilesScrollOffset = maxOffset;
-
-            _profilesScrollBar.Minimum = 0;
-            _profilesScrollBar.Maximum = maxOffset;
-            _profilesScrollBar.Enabled = maxOffset > 0;
-
-            if (!_profilesScrollBar.Enabled)
-            {
+            if (_profilesScrollOffset < 0)
                 _profilesScrollOffset = 0;
-            }
-            else
+
+            bool scrollable = maxOffset > 0;
+
+            if (_profilesScrollTrack != null && _profilesScrollThumb != null)
             {
-                if (_profilesScrollOffset < _profilesScrollBar.Minimum)
-                    _profilesScrollOffset = _profilesScrollBar.Minimum;
-                if (_profilesScrollOffset > _profilesScrollBar.Maximum)
-                    _profilesScrollOffset = _profilesScrollBar.Maximum;
+                if (!scrollable)
+                {
+                    _profilesScrollThumb.Visible = false;
+                }
+                else
+                {
+                    _profilesScrollThumb.Visible = true;
+
+                    int trackHeight = _profilesScrollTrack.ClientSize.Height;
+                    if (trackHeight <= 0) trackHeight = 1;
+
+                    double viewportRatio = viewportHeight / (double)totalContentHeight;
+                    if (viewportRatio > 1.0) viewportRatio = 1.0;
+                    if (viewportRatio < 0.1) viewportRatio = 0.1;
+
+                    int thumbHeight = Math.Max(20, (int)(trackHeight * viewportRatio));
+                    if (thumbHeight > trackHeight) thumbHeight = trackHeight;
+                    _profilesScrollThumb.Height = thumbHeight;
+
+                    double scrollRatio = maxOffset == 0 ? 0.0 : _profilesScrollOffset / (double)maxOffset;
+                    int thumbMaxTravel = trackHeight - thumbHeight;
+                    if (thumbMaxTravel < 0) thumbMaxTravel = 0;
+
+                    int thumbTop = (int)(thumbMaxTravel * scrollRatio);
+                    if (thumbTop < 0) thumbTop = 0;
+                    if (thumbTop > thumbMaxTravel) thumbTop = thumbMaxTravel;
+
+                    _profilesScrollThumb.Top = thumbTop;
+                }
             }
-
-            if (_profilesScrollBar.Enabled)
-                _profilesScrollBar.Value = _profilesScrollOffset;
-
-            _profilesPanel.Location = new Point(0, -_profilesScrollOffset);
-        }
-
-        private void ProfilesScrollBar_Scroll(object? sender, ScrollEventArgs e)
-        {
-            _profilesScrollOffset = e.NewValue;
-            if (_profilesScrollOffset < _profilesScrollBar.Minimum)
-                _profilesScrollOffset = _profilesScrollBar.Minimum;
-            if (_profilesScrollOffset > _profilesScrollBar.Maximum)
-                _profilesScrollOffset = _profilesScrollBar.Maximum;
 
             _profilesPanel.Location = new Point(0, -_profilesScrollOffset);
         }
 
         private void ProfilesPanel_MouseWheel(object? sender, MouseEventArgs e)
         {
-            if (!_profilesScrollBar.Enabled) return;
+            if (_profilesMaxScrollOffset <= 0) return;
 
             int delta = -e.Delta;
-            int step = _profilesScrollBar.SmallChange;
+            int step = ProfilesScrollStep;
             int newOffset = _profilesScrollOffset + (delta > 0 ? step : -step);
 
-            if (newOffset < _profilesScrollBar.Minimum)
-                newOffset = _profilesScrollBar.Minimum;
-            if (newOffset > _profilesScrollBar.Maximum)
-                newOffset = _profilesScrollBar.Maximum;
+            if (newOffset < 0)
+                newOffset = 0;
+            if (newOffset > _profilesMaxScrollOffset)
+                newOffset = _profilesMaxScrollOffset;
 
             _profilesScrollOffset = newOffset;
-            _profilesScrollBar.Value = newOffset;
-            _profilesPanel.Location = new Point(0, -_profilesScrollOffset);
+            UpdateProfilesScrollBar();
         }
 
         // ===== Settings page =====
@@ -769,6 +842,16 @@ namespace MouseSliderApp
                 Location = new Point(10, 5)
             };
 
+            // thin accent line under movement title
+            var movementUnderline = new Panel
+            {
+                Height = 2,
+                Width = _movementCard.Width - 20,
+                BackColor = AccentPrimarySoft,
+                Location = new Point(10, 28),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+
             _labelHorizontal = new Label
             {
                 AutoSize = true,
@@ -826,6 +909,7 @@ namespace MouseSliderApp
             _textVertical.Leave += TextVertical_Leave;
 
             _movementCard.Controls.Add(movementTitle);
+            _movementCard.Controls.Add(movementUnderline);
             _movementCard.Controls.Add(_labelHorizontal);
             _movementCard.Controls.Add(_trackBarHorizontal);
             _movementCard.Controls.Add(_textHorizontal);
@@ -849,6 +933,16 @@ namespace MouseSliderApp
                 Text = "Setups & Keybinds",
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold),
                 Location = new Point(10, 5)
+            };
+
+            // thin accent line under setups title
+            var setupUnderline = new Panel
+            {
+                Height = 2,
+                Width = _setupCard.Width - 20,
+                BackColor = AccentPrimarySoft,
+                Location = new Point(10, 28),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
 
             _labelActiveSetup = new Label
@@ -906,6 +1000,7 @@ namespace MouseSliderApp
             _buttonSaveSetup2.Click += ButtonSaveSetup2_Click;
 
             _setupCard.Controls.Add(setupTitle);
+            _setupCard.Controls.Add(setupUnderline);
             _setupCard.Controls.Add(_labelActiveSetup);
             _setupCard.Controls.Add(_labelSetup1);
             _setupCard.Controls.Add(_textKey1);
@@ -1261,30 +1356,16 @@ namespace MouseSliderApp
         {
             _currentCategory = category;
 
-            _profilesPanel.SuspendLayout();
-
+            // reset highlight
             if (_selectedProfileCard != null)
             {
                 _selectedProfileCard.BackColor = CardNormalColor;
                 _selectedProfileCard = null;
             }
 
-            _profilesPanel.Controls.Clear();
-            _profilesScrollOffset = 0;
-
-            foreach (var p in _profiles)
-            {
-                if (p.Category == category)
-                {
-                    var card = GetOrCreateProfileCard(p);
-                    _profilesPanel.Controls.Add(card);
-                }
-            }
-
-            _profilesPanel.ResumeLayout();
-
             _currentProfile = null;
             _labelSelectedProfile.Text = "Selected profile: (none)";
+            _labelSelectedSetup.Text = "Setup: (none)";
 
             if (_textKey1 != null) _textKey1.Text = "None";
             if (_textKey2 != null) _textKey2.Text = "None";
@@ -1293,21 +1374,113 @@ namespace MouseSliderApp
 
             ClearPictureBoxImage();
 
-            if (_profilesPanel.Controls.Count > 0)
+            StyleSegmentButton(_buttonCategoryA, category == "A");
+            StyleSegmentButton(_buttonCategoryB, category == "B");
+
+            // reset search placeholder when switching side
+            if (_searchBox != null)
             {
-                if (_profilesPanel.Controls[0] is Panel firstCard &&
-                    firstCard.Tag is Profile firstProfile)
+                _searchHasPlaceholder = true;
+                _searchBox.ForeColor = TextMuted;
+                _searchBox.Text = SearchPlaceholder;
+            }
+            _currentSearchText = string.Empty;
+
+            RefreshProfileCards();
+        }
+
+        // (2a) search + category filtering
+        private void RefreshProfileCards()
+        {
+            if (_profilesPanel == null)
+                return;
+
+            _profilesPanel.SuspendLayout();
+            _profilesPanel.Controls.Clear();
+            _profilesScrollOffset = 0;
+
+            string search = _currentSearchText?.Trim() ?? string.Empty;
+            bool hasSearch = search.Length > 0;
+
+            Panel? existingSelectedCard = null;
+
+            foreach (var p in _profiles)
+            {
+                if (p.Category != _currentCategory)
+                    continue;
+
+                if (hasSearch &&
+                    (p.Name?.IndexOf(search, StringComparison.InvariantCultureIgnoreCase) ?? -1) < 0)
+                    continue;
+
+                var card = GetOrCreateProfileCard(p);
+                _profilesPanel.Controls.Add(card);
+
+                if (_currentProfile != null && ReferenceEquals(p, _currentProfile))
                 {
-                    SelectProfile(firstProfile, firstCard, goToSettings: false);
+                    existingSelectedCard = card;
                 }
             }
 
-            StyleSegmentButton(_buttonCategoryA, category == "A");
-            StyleSegmentButton(_buttonCategoryB, category == "B");
+            _profilesPanel.ResumeLayout();
+
+            if (_profilesPanel.Controls.Count > 0)
+            {
+                if (_currentProfile == null || existingSelectedCard == null)
+                {
+                    if (_profilesPanel.Controls[0] is Panel firstCard &&
+                        firstCard.Tag is Profile firstProfile)
+                    {
+                        SelectProfile(firstProfile, firstCard, goToSettings: false);
+                    }
+                }
+                else
+                {
+                    HighlightSelectedCard(existingSelectedCard);
+                }
+            }
+            else
+            {
+                _currentProfile = null;
+                UpdateSelectedProfileDetails();
+            }
 
             CenterProfiles();
             UpdateProfilesScrollBar();
             UpdateActiveBadges();
+        }
+
+        private void SearchBox_GotFocus(object? sender, EventArgs e)
+        {
+            if (_searchHasPlaceholder)
+            {
+                _searchHasPlaceholder = false;
+                _searchBox.Text = "";
+                _searchBox.ForeColor = Color.White;
+            }
+        }
+
+        private void SearchBox_LostFocus(object? sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(_searchBox.Text))
+            {
+                _searchHasPlaceholder = true;
+                _searchBox.ForeColor = TextMuted;
+                _searchBox.Text = SearchPlaceholder;
+            }
+        }
+
+        private void SearchBox_TextChanged(object? sender, EventArgs e)
+        {
+            if (_searchHasPlaceholder)
+            {
+                _currentSearchText = string.Empty;
+            }
+            else
+            {
+                _currentSearchText = _searchBox.Text ?? string.Empty;
+            }
+            RefreshProfileCards();
         }
 
         private Panel GetOrCreateProfileCard(Profile profile)
@@ -1454,20 +1627,28 @@ namespace MouseSliderApp
             SelectProfile(profile, card, goToSettings: true);
         }
 
-        private void SelectProfile(Profile profile, Panel? card, bool goToSettings)
-        {
-            _currentProfile = profile;
-            _labelSelectedProfile.Text = $"Selected: {profile.Name}";
-            HighlightSelectedCard(card);
-            LoadProfile(profile);
+private void SelectProfile(Profile profile, Panel? card, bool goToSettings)
+{
+    // If we are staying on the profiles page and the search box is focused,
+    // remove focus so you don't keep typing in it by mistake.
+    if (!goToSettings && _searchBox != null && _searchBox.Focused)
+    {
+        this.ActiveControl = null; // drop focus from the search box
+    }
 
-            if (goToSettings)
-            {
-                ShowSettingsPage();
-            }
+    _currentProfile = profile;
+    HighlightSelectedCard(card);
+    LoadProfile(profile);
+    UpdateSelectedProfileDetails();
 
-            UpdateActiveBadges();
-        }
+    if (goToSettings)
+    {
+        ShowSettingsPage();
+    }
+
+    UpdateActiveBadges();
+}
+
 
         private void HighlightSelectedCard(Panel? card)
         {
@@ -1500,6 +1681,29 @@ namespace MouseSliderApp
                 bool show = _isActive && _currentProfile != null && ReferenceEquals(profile, _currentProfile);
                 badge.Visible = show;
             }
+        }
+
+        // (2b) show active setup + speeds in top bar
+        private void UpdateSelectedProfileDetails()
+        {
+            if (_labelSelectedProfile == null || _labelSelectedSetup == null)
+                return;
+
+            if (_currentProfile == null)
+            {
+                _labelSelectedProfile.Text = "Selected profile: (none)";
+                _labelSelectedSetup.Text = "Setup: (none)";
+                LayoutProfilesTopBar();
+                return;
+            }
+
+            _labelSelectedProfile.Text = $"Selected: {_currentProfile.Name}";
+
+            string hText = _horizontalSpeed.ToString("0.000", CultureInfo.InvariantCulture);
+            string vText = _verticalSpeed.ToString("0.000", CultureInfo.InvariantCulture);
+            _labelSelectedSetup.Text = $"Setup: {_currentSetupIndex} (H: {hText}, V: {vText})";
+
+            LayoutProfilesTopBar();
         }
 
         private void LoadProfile(Profile profile)
@@ -1551,6 +1755,11 @@ namespace MouseSliderApp
             _labelActiveSetup.Text = "Active setup: 1";
             _textKey1.Text = "None";
             _textKey2.Text = "None";
+
+            if (_currentProfile != null)
+            {
+                UpdateSelectedProfileDetails();
+            }
 
             try
             {
@@ -1795,6 +2004,11 @@ namespace MouseSliderApp
 
             UpdateHorizontalDisplay();
             UpdateVerticalDisplay();
+
+            if (_currentProfile != null && ReferenceEquals(profile, _currentProfile))
+            {
+                UpdateSelectedProfileDetails();
+            }
         }
 
         // ==========================================================
@@ -1804,12 +2018,18 @@ namespace MouseSliderApp
         {
             _horizontalSpeed = _trackBarHorizontal.Value / SliderScale;
             UpdateHorizontalDisplay();
+
+            if (_currentProfile != null)
+                UpdateSelectedProfileDetails();
         }
 
         private void SyncVerticalFromSlider()
         {
             _verticalSpeed = _trackBarVertical.Value / SliderScale;
             UpdateVerticalDisplay();
+
+            if (_currentProfile != null)
+                UpdateSelectedProfileDetails();
         }
 
         private void UpdateHorizontalDisplay()
@@ -1878,6 +2098,9 @@ namespace MouseSliderApp
                 _horizontalSpeed = value;
                 _trackBarHorizontal.Value = (int)Math.Round(value * SliderScale);
                 UpdateHorizontalDisplay();
+
+                if (_currentProfile != null)
+                    UpdateSelectedProfileDetails();
             }
         }
 
@@ -1897,6 +2120,9 @@ namespace MouseSliderApp
                 _verticalSpeed = value;
                 _trackBarVertical.Value = (int)Math.Round(value * SliderScale);
                 UpdateVerticalDisplay();
+
+                if (_currentProfile != null)
+                    UpdateSelectedProfileDetails();
             }
         }
 
