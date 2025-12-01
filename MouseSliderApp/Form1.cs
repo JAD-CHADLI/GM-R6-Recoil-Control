@@ -63,6 +63,10 @@ namespace MouseSliderApp
         private PictureBox _pictureProfile = null!;
         private Label _labelEditingProfile = null!;
         private Button _buttonBack = null!;
+        private Button _buttonResetProfile = null!;   // per-profile reset
+
+        // Settings watermark logo
+        private PictureBox _settingsLogoWatermark = null!;
 
         // ====== Movement state ======
         private bool _isActive;
@@ -92,10 +96,13 @@ namespace MouseSliderApp
         private static readonly Color AccentPrimary = Color.FromArgb(59, 130, 246);   // primary blue
         private static readonly Color AccentPrimarySoft = Color.FromArgb(37, 99, 235);
         private static readonly Color AccentPositive = Color.FromArgb(34, 197, 94);   // green
-        private static readonly Color AccentDanger = Color.FromArgb(239, 68, 68);    // red
+        private static readonly Color AccentDanger = Color.FromArgb(239, 68, 68);     // red
         private static readonly Color TextMuted = Color.FromArgb(148, 163, 184);
 
         private const string ActiveBadgeName = "ActiveBadge";
+
+        // App logo (shared) – used in headers + watermark
+        private Image? _appLogoImage;
 
         // ====== Profile model ======
         private class Profile
@@ -127,6 +134,13 @@ namespace MouseSliderApp
 
             public override string ToString() => Name;
         }
+
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+            TryEnableDarkTitleBar();
+        }
+
 
         private class ProfileData
         {
@@ -164,7 +178,21 @@ namespace MouseSliderApp
             KeyPreview = true;
             InitializeUi();
 
-            // enable double-buffering after controls are created
+            // High-res icon for the window (Windows will still draw it small in the title bar)
+            try
+            {
+                string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AppIcon.ico");
+                if (File.Exists(iconPath))
+                {
+                    this.Icon = new Icon(iconPath);
+                }
+            }
+            catch
+            {
+                // ignore if something goes wrong
+            }
+
+            // existing stuff
             SetDoubleBuffered(this);
             SetDoubleBuffered(_pageProfiles);
             SetDoubleBuffered(_pageSettings);
@@ -176,6 +204,39 @@ namespace MouseSliderApp
             ShowProfilesPage();
         }
 
+        // For dark title bar / border
+        [DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(
+            IntPtr hwnd,
+            int attr,
+            ref int attrValue,
+            int attrSize);
+
+        private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+
+        private void TryEnableDarkTitleBar()
+        {
+            try
+            {
+                int useDark = 1;
+                // Ask Windows to use the dark title bar / border for this window
+                DwmSetWindowAttribute(
+                    this.Handle,
+                    DWMWA_USE_IMMERSIVE_DARK_MODE,
+                    ref useDark,
+                    sizeof(int));
+            }
+            catch
+            {
+                // If it fails (older Windows), just ignore – app still works
+            }
+        }
+
+
+
+
+
+
         // ==========================================================
         // UI setup
         // ==========================================================
@@ -185,7 +246,6 @@ namespace MouseSliderApp
             ClientSize = new Size(1100, 650);
             StartPosition = FormStartPosition.CenterScreen;
             Font = new Font("Segoe UI", 9F);
-            // Global background – dark navy
             BackColor = BgMain;
             ForeColor = Color.White;
 
@@ -196,7 +256,6 @@ namespace MouseSliderApp
             _movementTimer.Tick += MovementTimer_Tick;
             _movementTimer.Start();
 
-            // ----- Pages -----
             _pageProfiles = new Panel
             {
                 Dock = DockStyle.Fill,
@@ -213,14 +272,36 @@ namespace MouseSliderApp
             Controls.Add(_pageSettings);
             Controls.Add(_pageProfiles);
 
+            // load logo once
+            LoadAppLogo();
+
             BuildProfilesPage();
             BuildSettingsPage();
+        }
+
+        private void LoadAppLogo()
+        {
+            // Put your logo at /Images/AppLogo.png
+            try
+            {
+                string logoPath = Path.Combine(_imagesFolder, "AppLogo.png");
+                if (!File.Exists(logoPath))
+                    return;
+
+                using (var img = Image.FromFile(logoPath))
+                {
+                    _appLogoImage = new Bitmap(img);
+                }
+            }
+            catch
+            {
+                // ignore – stays null
+            }
         }
 
         // ===== Profiles page (main menu) =====
         private void BuildProfilesPage()
         {
-            // header inside profiles page
             var header = new Panel
             {
                 Dock = DockStyle.Top,
@@ -228,13 +309,37 @@ namespace MouseSliderApp
                 BackColor = BgHeader
             };
 
+            // BIGGER logo in header
+            var logoBox = new PictureBox
+            {
+                Size = new Size(40, 40),
+                Location = new Point(15, 10),
+                SizeMode = PictureBoxSizeMode.Zoom,
+                BackColor = Color.Transparent
+            };
+            if (_appLogoImage != null)
+            {
+                logoBox.Image = _appLogoImage;
+            }
+            else
+            {
+                logoBox.Paint += (s, e) =>
+                {
+                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                    using (var pen = new Pen(Color.FromArgb(55, 65, 81), 2))
+                    {
+                        e.Graphics.DrawRectangle(pen, 3, 3, logoBox.Width - 6, logoBox.Height - 6);
+                    }
+                };
+            }
+
             var titleLabel = new Label
             {
                 AutoSize = true,
                 Text = "Precision Mouse Profiles",
                 Font = new Font("Segoe UI", 16F, FontStyle.Bold),
                 ForeColor = Color.White,
-                Location = new Point(15, 14)
+                Location = new Point(logoBox.Right + 12, 14)
             };
 
             _buttonResetAll = new Button
@@ -265,6 +370,7 @@ namespace MouseSliderApp
             _buttonStart.Click += ButtonStart_Click;
             ApplyRoundedCorners(_buttonStart, 6);
 
+            header.Controls.Add(logoBox);
             header.Controls.Add(titleLabel);
             header.Controls.Add(_buttonResetAll);
             header.Controls.Add(_buttonStart);
@@ -314,9 +420,7 @@ namespace MouseSliderApp
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold)
             };
 
-            // A = Attackers
             _buttonCategoryA = CreateFlatButton("Attackers", 100, 28);
-            // B = Defenders
             _buttonCategoryB = CreateFlatButton("Defenders", 100, 28);
 
             StyleSegmentButton(_buttonCategoryA, true);
@@ -337,13 +441,11 @@ namespace MouseSliderApp
             topBar.Controls.Add(_buttonCategoryB);
             topBar.Controls.Add(_labelSelectedProfile);
 
-            // center categories + keep "Selected" on the right
             topBar.Resize += (s, e) =>
             {
                 int gap = 10;
                 int y = 10;
 
-                // total width of label + buttons + gaps
                 int totalWidth = _labelCategory.Width + gap + _buttonCategoryA.Width + gap + _buttonCategoryB.Width;
                 int startX = (topBar.ClientSize.Width - totalWidth) / 2;
                 if (startX < 10) startX = 10;
@@ -352,7 +454,6 @@ namespace MouseSliderApp
                 _buttonCategoryA.Location = new Point(_labelCategory.Right + gap, y);
                 _buttonCategoryB.Location = new Point(_buttonCategoryA.Right + gap, y);
 
-                // selected text stays aligned to the right
                 _labelSelectedProfile.Location = new Point(
                     topBar.ClientSize.Width - _labelSelectedProfile.Width - 20,
                     y + 3);
@@ -377,7 +478,7 @@ namespace MouseSliderApp
 
             _profilesPanel = new FlowLayoutPanel
             {
-                AutoScroll = false, // we handle scroll ourselves
+                AutoScroll = false,
                 WrapContents = true,
                 FlowDirection = FlowDirection.LeftToRight,
                 BackColor = BgMain,
@@ -457,7 +558,6 @@ namespace MouseSliderApp
             if (_profilesContainer == null || _profilesPanel == null || _profilesScrollBar == null)
                 return;
 
-            // make sure FlowLayoutPanel has positioned ALL cards
             _profilesPanel.PerformLayout();
 
             int contentHeight = 0;
@@ -470,11 +570,9 @@ namespace MouseSliderApp
             int viewportHeight = _profilesContainer.ClientSize.Height;
             if (viewportHeight <= 0) viewportHeight = 1;
 
-            // total content including padding
             int totalContentHeight = contentHeight + _profilesPanel.Padding.Vertical;
             _profilesPanel.Height = Math.Max(_profilesContainer.ClientSize.Height, totalContentHeight);
 
-            // how far we are allowed to scroll
             int maxOffset = Math.Max(0, totalContentHeight - viewportHeight);
             if (_profilesScrollOffset > maxOffset)
                 _profilesScrollOffset = maxOffset;
@@ -498,7 +596,6 @@ namespace MouseSliderApp
             if (_profilesScrollBar.Enabled)
                 _profilesScrollBar.Value = _profilesScrollOffset;
 
-            // move the whole grid up/down
             _profilesPanel.Location = new Point(0, -_profilesScrollOffset);
         }
 
@@ -517,7 +614,7 @@ namespace MouseSliderApp
         {
             if (!_profilesScrollBar.Enabled) return;
 
-            int delta = -e.Delta; // up is negative
+            int delta = -e.Delta;
             int step = _profilesScrollBar.SmallChange;
             int newOffset = _profilesScrollOffset + (delta > 0 ? step : -step);
 
@@ -555,17 +652,64 @@ namespace MouseSliderApp
             _buttonBack.Click += (s, e) => ShowProfilesPage();
             ApplyRoundedCorners(_buttonBack, 6);
 
+            // BIGGER logo in settings header
+            var logoBox = new PictureBox
+            {
+                Size = new Size(32, 32),
+                Location = new Point(_buttonBack.Right + 15, 14),
+                SizeMode = PictureBoxSizeMode.Zoom,
+                BackColor = Color.Transparent
+            };
+            if (_appLogoImage != null)
+            {
+                logoBox.Image = _appLogoImage;
+            }
+            else
+            {
+                logoBox.Paint += (s, e) =>
+                {
+                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                    using (var pen = new Pen(Color.FromArgb(55, 65, 81), 2))
+                    {
+                        e.Graphics.DrawRectangle(pen, 3, 3, logoBox.Width - 6, logoBox.Height - 6);
+                    }
+                };
+            }
+
             _labelEditingProfile = new Label
             {
                 AutoSize = true,
                 Text = "Editing: (none)",
                 Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                 ForeColor = Color.White,
-                Location = new Point(110, 18)
+                Location = new Point(logoBox.Right + 10, 19)
             };
 
+            _buttonResetProfile = new Button
+            {
+                Text = "Reset profile",
+                Width = 110,
+                Height = 30,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = AccentDanger,
+                ForeColor = Color.White,
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
+            };
+            _buttonResetProfile.FlatAppearance.BorderSize = 0;
+            ApplyRoundedCorners(_buttonResetProfile, 6);
+            _buttonResetProfile.Click += ButtonResetProfile_Click;
+
             header.Controls.Add(_buttonBack);
+            header.Controls.Add(logoBox);
             header.Controls.Add(_labelEditingProfile);
+            header.Controls.Add(_buttonResetProfile);
+
+            header.Resize += (s, e) =>
+            {
+                _buttonResetProfile.Location = new Point(
+                    header.Width - _buttonResetProfile.Width - 20,
+                    15);
+            };
 
             var content = new Panel
             {
@@ -574,7 +718,6 @@ namespace MouseSliderApp
                 Padding = new Padding(0)
             };
 
-            // inner layout panel that we will center
             var settingsLayout = new Panel
             {
                 BackColor = Color.Transparent
@@ -608,7 +751,7 @@ namespace MouseSliderApp
             };
             operatorCaption.Location = new Point(operatorFrame.Left + 4, operatorFrame.Bottom + 6);
 
-            // movement card (without start button)
+            // movement card
             _movementCard = new Panel
             {
                 BackColor = CardNormalColor,
@@ -773,24 +916,52 @@ namespace MouseSliderApp
             _setupCard.Controls.Add(_buttonSetKey2);
             _setupCard.Controls.Add(_buttonSaveSetup2);
 
-            // put everything into the centered layout panel
             settingsLayout.Controls.Add(operatorFrame);
             settingsLayout.Controls.Add(operatorCaption);
             settingsLayout.Controls.Add(_movementCard);
             settingsLayout.Controls.Add(_setupCard);
 
-            // size of the inner layout based on children
             int layoutWidth = Math.Max(operatorFrame.Right, _movementCard.Right);
             int layoutHeight = Math.Max(operatorFrame.Bottom + 30, _setupCard.Bottom);
             settingsLayout.Size = new Size(layoutWidth, layoutHeight);
 
             content.Controls.Add(settingsLayout);
+
+            // WATERMARK logo bottom-right on settings page
+            _settingsLogoWatermark = new PictureBox
+            {
+                Size = new Size(80, 80),
+                SizeMode = PictureBoxSizeMode.Zoom,
+                BackColor = Color.Transparent
+            };
+            if (_appLogoImage != null)
+            {
+                _settingsLogoWatermark.Image = _appLogoImage;
+            }
+            else
+            {
+                _settingsLogoWatermark.Paint += (s, e) =>
+                {
+                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                    using (var pen = new Pen(Color.FromArgb(55, 65, 81), 2))
+                    {
+                        e.Graphics.DrawRectangle(pen, 4, 4, _settingsLogoWatermark.Width - 8, _settingsLogoWatermark.Height - 8);
+                    }
+                };
+            }
+            content.Controls.Add(_settingsLogoWatermark);
+
+            // Center layout + position watermark on resize
+            content.Resize += (s, e) =>
+            {
+                CenterInnerPanel(settingsLayout, content);
+                PositionSettingsLogoWatermark(content);
+            };
+            CenterInnerPanel(settingsLayout, content);
+            PositionSettingsLogoWatermark(content);
+
             _pageSettings.Controls.Add(content);
             _pageSettings.Controls.Add(header);
-
-            // center the layout inside the content panel
-            content.Resize += (s, e) => CenterInnerPanel(settingsLayout, content);
-            CenterInnerPanel(settingsLayout, content);
 
             SyncHorizontalFromSlider();
             SyncVerticalFromSlider();
@@ -810,9 +981,7 @@ namespace MouseSliderApp
             btn.FlatAppearance.BorderSize = 0;
             btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(75, 85, 99);
             btn.FlatAppearance.MouseDownBackColor = Color.FromArgb(31, 41, 55);
-
             ApplyRoundedCorners(btn, 6);
-
             return btn;
         }
 
@@ -870,6 +1039,17 @@ namespace MouseSliderApp
             inner.Location = new Point(x, y);
         }
 
+        private void PositionSettingsLogoWatermark(Control content)
+        {
+            if (_settingsLogoWatermark == null) return;
+            int margin = 18;
+            int x = content.ClientSize.Width - _settingsLogoWatermark.Width - margin;
+            int y = content.ClientSize.Height - _settingsLogoWatermark.Height - margin;
+            if (x < margin) x = margin;
+            if (y < margin) y = margin;
+            _settingsLogoWatermark.Location = new Point(x, y);
+        }
+
         // smooth drawing (reduce flicker)
         private void SetDoubleBuffered(Control c)
         {
@@ -899,7 +1079,7 @@ namespace MouseSliderApp
                 return;
 
             _labelEditingProfile.Text = $"Editing: {_currentProfile.Name}";
-            LoadProfileImage(_currentProfile.ImageFileName); // load big image only here
+            LoadProfileImage(_currentProfile.ImageFileName);
             _pageSettings.Visible = true;
             _pageSettings.BringToFront();
             _pageProfiles.Visible = false;
@@ -910,7 +1090,7 @@ namespace MouseSliderApp
         // ==========================================================
         private void CreateProfiles()
         {
-            // ===== Category A – Rainbow Six Siege Attackers =====
+            // Category A – Attackers
             _profiles.Add(new Profile("A", 1, "Sledge", "A_Sledge.png"));
             _profiles.Add(new Profile("A", 2, "Thatcher", "A_Thatcher.png"));
             _profiles.Add(new Profile("A", 3, "Ash", "A_Ash.png"));
@@ -950,7 +1130,7 @@ namespace MouseSliderApp
             _profiles.Add(new Profile("A", 37, "Striker", "A_Striker.png"));
             _profiles.Add(new Profile("A", 38, "Rauora", "A_Rauora.png"));
 
-            // ===== Category B – Rainbow Six Siege Defenders (37, Wisp removed) =====
+            // Category B – Defenders
             _profiles.Add(new Profile("B", 1, "Smoke", "B_Smoke.png"));
             _profiles.Add(new Profile("B", 2, "Mute", "B_Mute.png"));
             _profiles.Add(new Profile("B", 3, "Castle", "B_Castle.png"));
@@ -1066,6 +1246,12 @@ namespace MouseSliderApp
         {
             SaveProfilesToFile();
             ClearPictureBoxImage();
+
+            if (_appLogoImage != null)
+            {
+                _appLogoImage.Dispose();
+                _appLogoImage = null;
+            }
         }
 
         // ==========================================================
@@ -1077,7 +1263,6 @@ namespace MouseSliderApp
 
             _profilesPanel.SuspendLayout();
 
-            // remove highlight from previous selected card
             if (_selectedProfileCard != null)
             {
                 _selectedProfileCard.BackColor = CardNormalColor;
@@ -1108,7 +1293,6 @@ namespace MouseSliderApp
 
             ClearPictureBoxImage();
 
-            // auto-select first profile (highlight + speeds, but no big image)
             if (_profilesPanel.Controls.Count > 0)
             {
                 if (_profilesPanel.Controls[0] is Panel firstCard &&
@@ -1151,7 +1335,6 @@ namespace MouseSliderApp
             };
             ApplyRoundedCorners(card, 8);
 
-            // ===== ACTIVE badge – centered at the top =====
             var activeBadge = new Label
             {
                 Name = ActiveBadgeName,
@@ -1167,7 +1350,6 @@ namespace MouseSliderApp
             };
             ApplyRoundedCorners(activeBadge, 9);
 
-            // center horizontally
             activeBadge.Location = new Point(
                 (card.Width - activeBadge.Width) / 2,
                 8
@@ -1181,7 +1363,6 @@ namespace MouseSliderApp
                 );
             };
 
-            // ===== Thumbnail (below badge) =====
             var thumb = new PictureBox
             {
                 Width = 150,
@@ -1192,7 +1373,6 @@ namespace MouseSliderApp
             };
             LoadThumbnailImage(thumb, profile.ImageFileName);
 
-            // ===== Name label =====
             var nameLabel = new Label
             {
                 AutoSize = false,
@@ -1203,7 +1383,6 @@ namespace MouseSliderApp
                 TextAlign = ContentAlignment.MiddleCenter
             };
 
-            // ===== MODIFY button (simple flat button, no rounded Region) =====
             var modifyButton = new Button
             {
                 Text = "Modify",
@@ -1223,18 +1402,15 @@ namespace MouseSliderApp
             modifyButton.FlatAppearance.MouseDownBackColor = Color.FromArgb(31, 41, 55);
             modifyButton.Click += (s, e) => StartModifyProfile(profile, card);
 
-            // ===== Add controls to card =====
             card.Controls.Add(activeBadge);
             card.Controls.Add(thumb);
             card.Controls.Add(nameLabel);
             card.Controls.Add(modifyButton);
 
-            // ===== Click on card / image / name = select only =====
             card.MouseClick += ProfileCard_Click;
             thumb.MouseClick += ProfileCard_Click;
             nameLabel.MouseClick += ProfileCard_Click;
 
-            // ===== Hover effect for card =====
             void HandleEnter(object? s, EventArgs e)
             {
                 if (card != _selectedProfileCard)
@@ -1283,11 +1459,11 @@ namespace MouseSliderApp
             _currentProfile = profile;
             _labelSelectedProfile.Text = $"Selected: {profile.Name}";
             HighlightSelectedCard(card);
-            LoadProfile(profile); // speeds and keys
+            LoadProfile(profile);
 
             if (goToSettings)
             {
-                ShowSettingsPage(); // this will load big image
+                ShowSettingsPage();
             }
 
             UpdateActiveBadges();
@@ -1304,7 +1480,7 @@ namespace MouseSliderApp
 
             if (card != null)
             {
-                card.BackColor = CardSelectedColor; // blue highlight
+                card.BackColor = CardSelectedColor;
             }
         }
 
@@ -1383,12 +1559,55 @@ namespace MouseSliderApp
             }
             catch
             {
-                // ignore
             }
 
             MessageBox.Show(
                 "All speeds and keybinds have been reset.",
                 "Reset complete",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
+
+        // Per-profile reset
+        private void ButtonResetProfile_Click(object? sender, EventArgs e)
+        {
+            if (_currentProfile == null)
+            {
+                MessageBox.Show(
+                    "No profile is selected.",
+                    "Reset profile",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+
+            var result = MessageBox.Show(
+                $"This will reset speeds and keybinds for {_currentProfile.Name}.\nAre you sure?",
+                "Reset this profile",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+
+            if (result != DialogResult.Yes)
+                return;
+
+            _currentProfile.Horizontal1 = 0.0;
+            _currentProfile.Vertical1 = 0.0;
+            _currentProfile.Horizontal2 = 0.0;
+            _currentProfile.Vertical2 = 0.0;
+            _currentProfile.Key1 = Keys.None;
+            _currentProfile.Key2 = Keys.None;
+
+            _currentSetupIndex = 1;
+            _labelActiveSetup.Text = "Active setup: 1";
+
+            ApplyProfileSetup(_currentProfile, 1);
+
+            _textKey1.Text = "None";
+            _textKey2.Text = "None";
+
+            MessageBox.Show(
+                $"Profile {_currentProfile.Name} has been reset.",
+                "Profile reset",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
         }
@@ -1416,7 +1635,6 @@ namespace MouseSliderApp
             }
             catch
             {
-                // ignore
             }
         }
 
@@ -1440,7 +1658,6 @@ namespace MouseSliderApp
             }
             catch
             {
-                // ignore
             }
         }
 
@@ -1662,9 +1879,6 @@ namespace MouseSliderApp
                 _trackBarHorizontal.Value = (int)Math.Round(value * SliderScale);
                 UpdateHorizontalDisplay();
             }
-            else
-            {
-            }
         }
 
         private void ApplyVerticalText()
@@ -1683,9 +1897,6 @@ namespace MouseSliderApp
                 _verticalSpeed = value;
                 _trackBarVertical.Value = (int)Math.Round(value * SliderScale);
                 UpdateVerticalDisplay();
-            }
-            else
-            {
             }
         }
 
