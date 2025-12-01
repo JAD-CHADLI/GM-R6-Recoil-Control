@@ -83,6 +83,18 @@ namespace MouseSliderApp
         private static readonly Color CardHoverColor = Color.FromArgb(51, 65, 85);
         private static readonly Color CardSelectedColor = Color.FromArgb(37, 99, 235);
 
+        // Theme colors
+        private static readonly Color BgMain = Color.FromArgb(10, 12, 24);
+        private static readonly Color BgHeader = Color.FromArgb(15, 23, 42);
+        private static readonly Color BgTopBar = Color.FromArgb(17, 24, 39);
+        private static readonly Color BgSettings = Color.FromArgb(15, 23, 42);
+
+        private static readonly Color AccentPrimary = Color.FromArgb(59, 130, 246);   // primary blue
+        private static readonly Color AccentPrimarySoft = Color.FromArgb(37, 99, 235);
+        private static readonly Color AccentPositive = Color.FromArgb(34, 197, 94);   // green (not used for Start anymore but kept)
+        private static readonly Color AccentDanger = Color.FromArgb(239, 68, 68);    // red
+        private static readonly Color TextMuted = Color.FromArgb(148, 163, 184);
+
         private const string ActiveBadgeName = "ActiveBadge";
 
         // ====== Profile model ======
@@ -174,7 +186,7 @@ namespace MouseSliderApp
             StartPosition = FormStartPosition.CenterScreen;
             Font = new Font("Segoe UI", 9F);
             // Global background – dark navy
-            BackColor = Color.FromArgb(11, 15, 26);
+            BackColor = BgMain;
             ForeColor = Color.White;
 
             KeyDown += Form1_KeyDown;
@@ -188,13 +200,13 @@ namespace MouseSliderApp
             _pageProfiles = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(11, 15, 26)
+                BackColor = BgMain
             };
 
             _pageSettings = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(11, 15, 26),
+                BackColor = BgMain,
                 Visible = false
             };
 
@@ -213,16 +225,16 @@ namespace MouseSliderApp
             {
                 Dock = DockStyle.Top,
                 Height = 60,
-                BackColor = Color.FromArgb(15, 23, 42) // slate-like
+                BackColor = BgHeader
             };
 
             var titleLabel = new Label
             {
                 AutoSize = true,
                 Text = "Precision Mouse Profiles",
-                Font = new Font("Segoe UI", 14F, FontStyle.Bold),
+                Font = new Font("Segoe UI", 16F, FontStyle.Bold),
                 ForeColor = Color.White,
-                Location = new Point(15, 15)
+                Location = new Point(15, 14)
             };
 
             _buttonResetAll = new Button
@@ -231,7 +243,7 @@ namespace MouseSliderApp
                 Width = 120,
                 Height = 30,
                 FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(239, 68, 68), // red
+                BackColor = AccentDanger,
                 ForeColor = Color.White,
                 Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
@@ -245,7 +257,7 @@ namespace MouseSliderApp
                 Width = 90,
                 Height = 30,
                 FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(34, 197, 94), // green
+                BackColor = AccentPrimary,
                 ForeColor = Color.White,
                 Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
@@ -268,13 +280,31 @@ namespace MouseSliderApp
                     15);
             };
 
+            header.Paint += (s, e) =>
+            {
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                using (var pen = new Pen(Color.FromArgb(31, 41, 55)))
+                {
+                    e.Graphics.DrawLine(pen, 0, header.Height - 1, header.Width, header.Height - 1);
+                }
+            };
+
             // top bar with category + selected label
             var topBar = new Panel
             {
                 Dock = DockStyle.Top,
                 Height = 50,
-                BackColor = Color.FromArgb(17, 24, 39),
+                BackColor = BgTopBar,
                 Padding = new Padding(15, 10, 15, 5)
+            };
+
+            topBar.Paint += (s, e) =>
+            {
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                using (var pen = new Pen(Color.FromArgb(31, 41, 55)))
+                {
+                    e.Graphics.DrawLine(pen, 0, topBar.Height - 1, topBar.Width, topBar.Height - 1);
+                }
             };
 
             _labelCategory = new Label
@@ -286,9 +316,11 @@ namespace MouseSliderApp
 
             // A = Attackers
             _buttonCategoryA = CreateFlatButton("Attackers", 100, 28);
-
             // B = Defenders
             _buttonCategoryB = CreateFlatButton("Defenders", 100, 28);
+
+            StyleSegmentButton(_buttonCategoryA, true);
+            StyleSegmentButton(_buttonCategoryB, false);
 
             _buttonCategoryA.Click += (s, e) => ShowCategory("A");
             _buttonCategoryB.Click += (s, e) => ShowCategory("B");
@@ -297,7 +329,7 @@ namespace MouseSliderApp
             {
                 AutoSize = true,
                 Text = "Selected profile: (none)",
-                ForeColor = Color.FromArgb(180, 191, 210)
+                ForeColor = TextMuted
             };
 
             topBar.Controls.Add(_labelCategory);
@@ -330,7 +362,7 @@ namespace MouseSliderApp
             _profilesContainer = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(11, 15, 26)
+                BackColor = BgMain
             };
 
             _profilesScrollBar = new VScrollBar
@@ -339,7 +371,7 @@ namespace MouseSliderApp
                 Width = 12,
                 SmallChange = 20,
                 LargeChange = 60,
-                BackColor = Color.FromArgb(15, 23, 42)
+                BackColor = BgHeader
             };
             _profilesScrollBar.Scroll += ProfilesScrollBar_Scroll;
 
@@ -348,7 +380,7 @@ namespace MouseSliderApp
                 AutoScroll = false, // we handle scroll ourselves
                 WrapContents = true,
                 FlowDirection = FlowDirection.LeftToRight,
-                BackColor = Color.FromArgb(11, 15, 26),
+                BackColor = BgMain,
                 Location = new Point(0, 0),
                 Padding = new Padding(0, 20, 0, 20)
             };
@@ -506,7 +538,7 @@ namespace MouseSliderApp
             {
                 Dock = DockStyle.Top,
                 Height = 60,
-                BackColor = Color.FromArgb(15, 23, 42)
+                BackColor = BgHeader
             };
 
             _buttonBack = new Button
@@ -538,26 +570,44 @@ namespace MouseSliderApp
             var content = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(15, 23, 42),
+                BackColor = BgSettings,
                 Padding = new Padding(20)
             };
 
-            // big image
-            _pictureProfile = new PictureBox
+            // hero frame + big image
+            var operatorFrame = new Panel
             {
                 Location = new Point(0, 0),
-                Size = new Size(260, 260),
-                BorderStyle = BorderStyle.FixedSingle,
+                Size = new Size(280, 300),
+                BackColor = CardNormalColor,
+                Padding = new Padding(12)
+            };
+            ApplyRoundedCorners(operatorFrame, 12);
+
+            _pictureProfile = new PictureBox
+            {
+                Dock = DockStyle.Fill,
+                BorderStyle = BorderStyle.None,
                 SizeMode = PictureBoxSizeMode.Zoom,
                 BackColor = Color.FromArgb(15, 23, 42)
+            };
+            operatorFrame.Controls.Add(_pictureProfile);
+
+            var operatorCaption = new Label
+            {
+                AutoSize = true,
+                Text = "Current operator",
+                ForeColor = TextMuted,
+                Font = new Font("Segoe UI", 8F, FontStyle.Regular),
+                Location = new Point(operatorFrame.Left + 4, operatorFrame.Bottom + 6)
             };
 
             // movement card (without start button)
             _movementCard = new Panel
             {
-                BackColor = Color.FromArgb(30, 41, 59),
+                BackColor = CardNormalColor,
                 Size = new Size(460, 200),
-                Location = new Point(280, 0),
+                Location = new Point(operatorFrame.Right + 20, 0),
                 Padding = new Padding(10)
             };
             ApplyRoundedCorners(_movementCard, 8);
@@ -637,9 +687,9 @@ namespace MouseSliderApp
             // setups card
             _setupCard = new Panel
             {
-                BackColor = Color.FromArgb(30, 41, 59),
+                BackColor = CardNormalColor,
                 Size = new Size(460, 220),
-                Location = new Point(280, _movementCard.Bottom + 15),
+                Location = new Point(_movementCard.Left, _movementCard.Bottom + 15),
                 Padding = new Padding(10)
             };
             ApplyRoundedCorners(_setupCard, 8);
@@ -657,7 +707,7 @@ namespace MouseSliderApp
                 AutoSize = true,
                 Text = "Active setup: 1",
                 Location = new Point(10, 30),
-                ForeColor = Color.FromArgb(180, 191, 210)
+                ForeColor = TextMuted
             };
 
             _labelSetup1 = new Label
@@ -717,7 +767,8 @@ namespace MouseSliderApp
             _setupCard.Controls.Add(_buttonSetKey2);
             _setupCard.Controls.Add(_buttonSaveSetup2);
 
-            content.Controls.Add(_pictureProfile);
+            content.Controls.Add(operatorFrame);
+            content.Controls.Add(operatorCaption);
             content.Controls.Add(_movementCard);
             content.Controls.Add(_setupCard);
 
@@ -746,6 +797,26 @@ namespace MouseSliderApp
             ApplyRoundedCorners(btn, 6);
 
             return btn;
+        }
+
+        private void StyleSegmentButton(Button button, bool isActive)
+        {
+            button.FlatStyle = FlatStyle.Flat;
+            button.FlatAppearance.BorderSize = 0;
+            button.Width = 110;
+            button.Height = 30;
+            button.Font = new Font("Segoe UI", 9F, isActive ? FontStyle.Bold : FontStyle.Regular);
+
+            if (isActive)
+            {
+                button.BackColor = AccentPrimary;
+                button.ForeColor = Color.White;
+            }
+            else
+            {
+                button.BackColor = CardNormalColor;
+                button.ForeColor = TextMuted;
+            }
         }
 
         private void ApplyRoundedCorners(Control control, int radius)
@@ -1021,13 +1092,8 @@ namespace MouseSliderApp
                 }
             }
 
-            _buttonCategoryA.BackColor = category == "A"
-                ? CardSelectedColor
-                : Color.FromArgb(55, 65, 81);
-
-            _buttonCategoryB.BackColor = category == "B"
-                ? CardSelectedColor
-                : Color.FromArgb(55, 65, 81);
+            StyleSegmentButton(_buttonCategoryA, category == "A");
+            StyleSegmentButton(_buttonCategoryB, category == "B");
 
             CenterProfiles();
             UpdateProfilesScrollBar();
@@ -1069,7 +1135,7 @@ namespace MouseSliderApp
                 Text = "ACTIVE",
                 TextAlign = ContentAlignment.MiddleCenter,
                 Font = new Font("Segoe UI", 7F, FontStyle.Bold),
-                BackColor = Color.FromArgb(34, 197, 94),
+                BackColor = AccentPositive,
                 ForeColor = Color.White,
                 Visible = false
             };
@@ -1142,7 +1208,7 @@ namespace MouseSliderApp
             thumb.MouseClick += ProfileCard_Click;
             nameLabel.MouseClick += ProfileCard_Click;
 
-            // ===== Hover effect for card (idea 1) =====
+            // ===== Hover effect for card =====
             void HandleEnter(object? s, EventArgs e)
             {
                 if (card != _selectedProfileCard)
@@ -1163,7 +1229,6 @@ namespace MouseSliderApp
 
             return card;
         }
-
 
         private void ProfileCard_Click(object? sender, MouseEventArgs e)
         {
@@ -1244,9 +1309,6 @@ namespace MouseSliderApp
             _textKey2.Text = profile.Key2 == Keys.None ? "None" : profile.Key2.ToString();
 
             ApplyProfileSetup(profile, 1);
-
-            // Do NOT load big image here anymore
-            // LoadProfileImage(profile.ImageFileName);
         }
 
         // ==========================================================
@@ -1611,12 +1673,14 @@ namespace MouseSliderApp
             if (_isActive)
             {
                 _buttonStart.Text = "Stop";
-                BackColor = Color.FromArgb(15, 23, 42);
+                _buttonStart.BackColor = AccentDanger;
+                BackColor = BgSettings;
             }
             else
             {
                 _buttonStart.Text = "Start";
-                BackColor = Color.FromArgb(11, 15, 26);
+                _buttonStart.BackColor = AccentPrimary;
+                BackColor = BgMain;
                 _comboArmed = false;
                 _comboActive = false;
             }
