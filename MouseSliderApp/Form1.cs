@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
@@ -16,6 +17,8 @@ namespace MouseSliderApp
         // ====== Pages ======
         private Panel _pageProfiles = null!;
         private Panel _pageSettings = null!;
+        private Panel _pageAbout = null!;
+        private Panel _pageTutorial = null!;
 
         // Container + custom scrollbar for profiles
         private Panel _profilesContainer = null!;
@@ -37,6 +40,8 @@ namespace MouseSliderApp
         // Global buttons on profiles page
         private Button _buttonStart = null!;
         private Button _buttonResetAll = null!;
+        private Button _buttonAbout = null!;
+        private Button _buttonTutorial = null!;
 
         // movement + setup "cards"
         private Panel _movementCard = null!;
@@ -274,6 +279,22 @@ namespace MouseSliderApp
                 Visible = false
             };
 
+            _pageAbout = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = BgMain,
+                Visible = false
+            };
+
+            _pageTutorial = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = BgMain,
+                Visible = false
+            };
+
+            Controls.Add(_pageTutorial);
+            Controls.Add(_pageAbout);
             Controls.Add(_pageSettings);
             Controls.Add(_pageProfiles);
 
@@ -282,6 +303,8 @@ namespace MouseSliderApp
 
             BuildProfilesPage();
             BuildSettingsPage();
+            BuildAboutPage();
+            BuildTutorialPage();
         }
 
         private void LoadAppLogo()
@@ -375,19 +398,40 @@ namespace MouseSliderApp
             _buttonStart.Click += ButtonStart_Click;
             ApplyRoundedCorners(_buttonStart, 6);
 
+            _buttonAbout = CreateFlatButton("About", 80, 30);
+            _buttonTutorial = CreateFlatButton("Tutorial", 80, 30);
+
+            _buttonAbout.Click += (s, e) => ShowAboutPage();
+            _buttonTutorial.Click += (s, e) => ShowTutorialPage();
+
             header.Controls.Add(logoBox);
             header.Controls.Add(titleLabel);
             header.Controls.Add(_buttonResetAll);
             header.Controls.Add(_buttonStart);
+            header.Controls.Add(_buttonAbout);
+            header.Controls.Add(_buttonTutorial);
 
             header.Resize += (s, e) =>
             {
+                int x = header.Width - 20;
+
                 _buttonResetAll.Location = new Point(
-                    header.Width - _buttonResetAll.Width - 20,
+                    x - _buttonResetAll.Width,
                     15);
+                x = _buttonResetAll.Left - 10;
 
                 _buttonStart.Location = new Point(
-                    _buttonResetAll.Left - _buttonStart.Width - 10,
+                    x - _buttonStart.Width,
+                    15);
+                x = _buttonStart.Left - 10;
+
+                _buttonTutorial.Location = new Point(
+                    x - _buttonTutorial.Width,
+                    15);
+                x = _buttonTutorial.Left - 10;
+
+                _buttonAbout.Location = new Point(
+                    x - _buttonAbout.Width,
                     15);
             };
 
@@ -1062,6 +1106,261 @@ namespace MouseSliderApp
             SyncVerticalFromSlider();
         }
 
+        // ===== About page =====
+private void BuildAboutPage()
+{
+    var header = new Panel
+    {
+        Dock = DockStyle.Top,
+        Height = 60,
+        BackColor = BgHeader
+    };
+
+    var backButton = new Button
+    {
+        Text = "← Back",
+        Width = 80,
+        Height = 30,
+        FlatStyle = FlatStyle.Flat,
+        BackColor = Color.FromArgb(55, 65, 81),
+        ForeColor = Color.White,
+        Location = new Point(15, 15)
+    };
+    backButton.FlatAppearance.BorderSize = 0;
+    ApplyRoundedCorners(backButton, 6);
+    backButton.Click += (s, e) => ShowProfilesPage();
+
+    var titleLabel = new Label
+    {
+        AutoSize = true,
+        Text = "About",
+        Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+        ForeColor = Color.White,
+        Location = new Point(backButton.Right + 10, 19)
+    };
+
+    header.Controls.Add(backButton);
+    header.Controls.Add(titleLabel);
+
+    var content = new Panel
+    {
+        Dock = DockStyle.Fill,
+        BackColor = BgSettings
+    };
+
+    var layout = new Panel
+    {
+        BackColor = Color.Transparent,
+        Size = new Size(500, 320)
+    };
+
+    var logoBox = new PictureBox
+    {
+        Size = new Size(180, 180),
+        SizeMode = PictureBoxSizeMode.Zoom,
+        BackColor = Color.Transparent
+    };
+
+    // ✅ Use a different logo ONLY for the About page
+    try
+    {
+        string aboutLogoPath = Path.Combine(_imagesFolder, "AboutLogo.png");
+        if (File.Exists(aboutLogoPath))
+        {
+            using (var img = Image.FromFile(aboutLogoPath))
+            {
+                logoBox.Image = new Bitmap(img);
+            }
+        }
+    }
+    catch
+    {
+        // ignore, we'll just fall back to the drawn placeholder
+    }
+
+    // If no custom AboutLogo.png found, draw a simple placeholder
+    if (logoBox.Image == null)
+    {
+        logoBox.Paint += (s, e) =>
+        {
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            using (var pen = new Pen(AccentPrimarySoft, 3))
+            {
+                e.Graphics.DrawRectangle(pen, 8, 8, logoBox.Width - 16, logoBox.Height - 16);
+            }
+        };
+    }
+
+    var madeByLabel = new Label
+    {
+        AutoSize = true,
+        Text = "Made by GAMMO",
+        Font = new Font("Segoe UI", 14F, FontStyle.Bold),
+        ForeColor = Color.White
+    };
+
+    var githubLink = new LinkLabel
+    {
+        AutoSize = true,
+        Text = "GitHub: JAD-CHADLI",
+        Font = new Font("Segoe UI", 10F, FontStyle.Regular),
+        LinkColor = AccentPrimary,
+        ActiveLinkColor = Color.White,
+        VisitedLinkColor = AccentPrimarySoft
+    };
+    githubLink.LinkBehavior = LinkBehavior.HoverUnderline;
+    githubLink.LinkClicked += (s, e) =>
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "https://github.com/JAD-CHADLI",
+                UseShellExecute = true
+            });
+        }
+        catch
+        {
+            MessageBox.Show(
+                "Could not open the GitHub link.",
+                "Error",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+        }
+    };
+
+    layout.Controls.Add(logoBox);
+    layout.Controls.Add(madeByLabel);
+    layout.Controls.Add(githubLink);
+
+    void Relayout()
+    {
+        logoBox.Location = new Point(
+            (layout.Width - logoBox.Width) / 2,
+            10);
+
+        madeByLabel.Location = new Point(
+            (layout.Width - madeByLabel.Width) / 2,
+            logoBox.Bottom + 15);
+
+        githubLink.Location = new Point(
+            (layout.Width - githubLink.Width) / 2,
+            madeByLabel.Bottom + 10);
+    }
+
+    layout.Resize += (s, e) => Relayout();
+    Relayout();
+
+    content.Controls.Add(layout);
+
+    content.Resize += (s, e) => CenterInnerPanel(layout, content);
+    CenterInnerPanel(layout, content);
+
+    _pageAbout.Controls.Add(content);
+    _pageAbout.Controls.Add(header);
+}
+
+
+        // ===== Tutorial page =====
+        private void BuildTutorialPage()
+        {
+            var header = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 60,
+                BackColor = BgHeader
+            };
+
+            var backButton = new Button
+            {
+                Text = "← Back",
+                Width = 80,
+                Height = 30,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(55, 65, 81),
+                ForeColor = Color.White,
+                Location = new Point(15, 15)
+            };
+            backButton.FlatAppearance.BorderSize = 0;
+            ApplyRoundedCorners(backButton, 6);
+            backButton.Click += (s, e) => ShowProfilesPage();
+
+            var titleLabel = new Label
+            {
+                AutoSize = true,
+                Text = "Tutorial",
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                ForeColor = Color.White,
+                Location = new Point(backButton.Right + 10, 19)
+            };
+
+            header.Controls.Add(backButton);
+            header.Controls.Add(titleLabel);
+
+            var content = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = BgSettings
+            };
+
+            var layout = new Panel
+            {
+                BackColor = Color.Transparent,
+                Size = new Size(700, 400)
+            };
+
+            var tutorialTitle = new Label
+            {
+                AutoSize = true,
+                Text = "How to use Mouse Slider Controller",
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                ForeColor = Color.White
+            };
+
+            var tutorialBody = new Label
+            {
+                AutoSize = true,
+                MaximumSize = new Size(650, 0),
+                ForeColor = TextMuted,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
+                Text =
+                    "1. Choose a side (Attackers / Defenders) at the top.\n" +
+                    "2. Use the search box on the left or scroll to find the operator you want.\n" +
+                    "3. Click a profile card to select it. Press \"Modify\" on a profile to open the settings page.\n" +
+                    "4. In the Movement card, set Horizontal and Vertical speed with the sliders or by typing values.\n" +
+                    "5. Choose a key for Setup 1 and Setup 2, then click \"Save 1\" / \"Save 2\" to store each setup for this profile.\n" +
+                    "6. Back on the main page, press \"Start\" to arm the tool.\n" +
+                    "   Hold RIGHT mouse button, then press LEFT mouse button to start the movement.\n" +
+                    "7. Press your setup keys in-game to quickly switch between Setup 1 and Setup 2 for the selected profile.\n" +
+                    "8. Use \"Reset profile\" to clear settings for the current operator, or \"RESET ALL\" to clear all profiles."
+            };
+
+            layout.Controls.Add(tutorialTitle);
+            layout.Controls.Add(tutorialBody);
+
+            void Relayout()
+            {
+                tutorialTitle.Location = new Point(
+                    (layout.Width - tutorialTitle.Width) / 2,
+                    10);
+
+                tutorialBody.Location = new Point(
+                    (layout.Width - tutorialBody.Width) / 2,
+                    tutorialTitle.Bottom + 20);
+            }
+
+            layout.Resize += (s, e) => Relayout();
+            Relayout();
+
+            content.Controls.Add(layout);
+
+            content.Resize += (s, e) => CenterInnerPanel(layout, content);
+            CenterInnerPanel(layout, content);
+
+            _pageTutorial.Controls.Add(content);
+            _pageTutorial.Controls.Add(header);
+        }
+
         private Button CreateFlatButton(string text, int width, int height)
         {
             var btn = new Button
@@ -1166,6 +1465,8 @@ namespace MouseSliderApp
             _pageProfiles.Visible = true;
             _pageProfiles.BringToFront();
             _pageSettings.Visible = false;
+            _pageAbout.Visible = false;
+            _pageTutorial.Visible = false;
         }
 
         private void ShowSettingsPage()
@@ -1178,6 +1479,26 @@ namespace MouseSliderApp
             _pageSettings.Visible = true;
             _pageSettings.BringToFront();
             _pageProfiles.Visible = false;
+            _pageAbout.Visible = false;
+            _pageTutorial.Visible = false;
+        }
+
+        private void ShowAboutPage()
+        {
+            _pageAbout.Visible = true;
+            _pageAbout.BringToFront();
+            _pageProfiles.Visible = false;
+            _pageSettings.Visible = false;
+            _pageTutorial.Visible = false;
+        }
+
+        private void ShowTutorialPage()
+        {
+            _pageTutorial.Visible = true;
+            _pageTutorial.BringToFront();
+            _pageProfiles.Visible = false;
+            _pageSettings.Visible = false;
+            _pageAbout.Visible = false;
         }
 
         // ==========================================================
@@ -1627,28 +1948,27 @@ namespace MouseSliderApp
             SelectProfile(profile, card, goToSettings: true);
         }
 
-private void SelectProfile(Profile profile, Panel? card, bool goToSettings)
-{
-    // If we are staying on the profiles page and the search box is focused,
-    // remove focus so you don't keep typing in it by mistake.
-    if (!goToSettings && _searchBox != null && _searchBox.Focused)
-    {
-        this.ActiveControl = null; // drop focus from the search box
-    }
+        private void SelectProfile(Profile profile, Panel? card, bool goToSettings)
+        {
+            // If we are staying on the profiles page and the search box is focused,
+            // remove focus so you don't keep typing in it by mistake.
+            if (!goToSettings && _searchBox != null && _searchBox.Focused)
+            {
+                this.ActiveControl = null; // drop focus from the search box
+            }
 
-    _currentProfile = profile;
-    HighlightSelectedCard(card);
-    LoadProfile(profile);
-    UpdateSelectedProfileDetails();
+            _currentProfile = profile;
+            HighlightSelectedCard(card);
+            LoadProfile(profile);
+            UpdateSelectedProfileDetails();
 
-    if (goToSettings)
-    {
-        ShowSettingsPage();
-    }
+            if (goToSettings)
+            {
+                ShowSettingsPage();
+            }
 
-    UpdateActiveBadges();
-}
-
+            UpdateActiveBadges();
+        }
 
         private void HighlightSelectedCard(Panel? card)
         {
