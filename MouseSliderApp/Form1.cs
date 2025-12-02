@@ -74,7 +74,7 @@ namespace MouseSliderApp
         private Button _buttonSetKey2 = null!;
         private Button _buttonSaveSetup2 = null!;
 
-        // NEW: summary labels that show saved H/V for each setup
+        // summary labels that show saved H/V for each setup
         private Label _labelSetup1Summary = null!;
         private Label _labelSetup2Summary = null!;
 
@@ -100,6 +100,11 @@ namespace MouseSliderApp
         private double _accumulatedY;
 
         private const double SliderScale = 100.0;
+        private const int MovementTimerIntervalMs = 20;
+        private const int HorizontalTrackBarMin = -10000;
+        private const int HorizontalTrackBarMax = 10000;
+        private const int VerticalTrackBarMin = 0;
+        private const int VerticalTrackBarMax = 10000;
 
         // Card colors (for hover/selection)
         private static readonly Color CardNormalColor = Color.FromArgb(30, 41, 59);
@@ -122,6 +127,9 @@ namespace MouseSliderApp
 
         // App logo (shared) – used in headers + watermark
         private Image? _appLogoImage;
+
+        // Tooltips
+        private ToolTip _toolTip = null!;
 
         // ====== Profile model ======
         private class Profile
@@ -203,7 +211,7 @@ namespace MouseSliderApp
                 string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AppIcon.ico");
                 if (File.Exists(iconPath))
                 {
-                    this.Icon = new Icon(iconPath);
+                    Icon = new Icon(iconPath);
                 }
             }
             catch
@@ -240,7 +248,7 @@ namespace MouseSliderApp
                 int useDark = 1;
                 // Ask Windows to use the dark title bar / border for this window
                 DwmSetWindowAttribute(
-                    this.Handle,
+                    Handle,
                     DWMWA_USE_IMMERSIVE_DARK_MODE,
                     ref useDark,
                     sizeof(int));
@@ -266,7 +274,9 @@ namespace MouseSliderApp
             KeyDown += Form1_KeyDown;
             FormClosing += Form1_FormClosing;
 
-            _movementTimer = new System.Windows.Forms.Timer { Interval = 20 };
+            _toolTip = CreateDefaultToolTip();
+
+            _movementTimer = new System.Windows.Forms.Timer { Interval = MovementTimerIntervalMs };
             _movementTimer.Tick += MovementTimer_Tick;
             _movementTimer.Start();
 
@@ -309,6 +319,17 @@ namespace MouseSliderApp
             BuildSettingsPage();
             BuildAboutPage();
             BuildTutorialPage();
+        }
+
+        private ToolTip CreateDefaultToolTip()
+        {
+            return new ToolTip
+            {
+                AutoPopDelay = 5000,
+                InitialDelay = 400,
+                ReshowDelay = 200,
+                ShowAlways = true
+            };
         }
 
         private void LoadAppLogo()
@@ -415,6 +436,12 @@ namespace MouseSliderApp
             header.Controls.Add(_buttonAbout);
             header.Controls.Add(_buttonTutorial);
 
+            // Tooltips for main header
+            _toolTip.SetToolTip(_buttonStart, "Toggle mouse movement for the selected profile.");
+            _toolTip.SetToolTip(_buttonResetAll, "Reset speeds and keybinds for all profiles.");
+            _toolTip.SetToolTip(_buttonAbout, "Show information about the application.");
+            _toolTip.SetToolTip(_buttonTutorial, "Open the quick tutorial.");
+
             // === UPDATED LAYOUT: Start + Reset centered, About + Tutorial on right ===
             header.Resize += (s, e) =>
             {
@@ -490,6 +517,9 @@ namespace MouseSliderApp
             _buttonCategoryA.Click += (s, e) => ShowCategory("A");
             _buttonCategoryB.Click += (s, e) => ShowCategory("B");
 
+            _toolTip.SetToolTip(_buttonCategoryA, "Show attacker operators.");
+            _toolTip.SetToolTip(_buttonCategoryB, "Show defender operators.");
+
             // search box with placeholder
             _searchBox = new TextBox
             {
@@ -504,6 +534,7 @@ namespace MouseSliderApp
             _searchBox.GotFocus += SearchBox_GotFocus;
             _searchBox.LostFocus += SearchBox_LostFocus;
             _searchBox.TextChanged += SearchBox_TextChanged;
+            _toolTip.SetToolTip(_searchBox, "Search operators by name.");
 
             _labelSelectedProfile = new Label
             {
@@ -777,6 +808,7 @@ namespace MouseSliderApp
             _buttonBack.FlatAppearance.BorderSize = 0;
             _buttonBack.Click += (s, e) => ShowProfilesPage();
             ApplyRoundedCorners(_buttonBack, 6);
+            _toolTip.SetToolTip(_buttonBack, "Back to profiles list.");
 
             // BIGGER logo in settings header
             var logoBox = new PictureBox
@@ -824,6 +856,7 @@ namespace MouseSliderApp
             _buttonResetProfile.FlatAppearance.BorderSize = 0;
             ApplyRoundedCorners(_buttonResetProfile, 6);
             _buttonResetProfile.Click += ButtonResetProfile_Click;
+            _toolTip.SetToolTip(_buttonResetProfile, "Reset speeds and keybinds only for this profile.");
 
             header.Controls.Add(_buttonBack);
             header.Controls.Add(logoBox);
@@ -867,6 +900,7 @@ namespace MouseSliderApp
                 BackColor = Color.FromArgb(15, 23, 42)
             };
             operatorFrame.Controls.Add(_pictureProfile);
+            _toolTip.SetToolTip(_pictureProfile, "Preview of the selected operator.");
 
             var operatorCaption = new Label
             {
@@ -914,8 +948,8 @@ namespace MouseSliderApp
 
             _trackBarHorizontal = new TrackBar
             {
-                Minimum = -10000,
-                Maximum = 10000,
+                Minimum = HorizontalTrackBarMin,
+                Maximum = HorizontalTrackBarMax,
                 TickFrequency = 2000,
                 Value = 0,
                 Width = 310,
@@ -923,6 +957,7 @@ namespace MouseSliderApp
                 BackColor = _movementCard.BackColor
             };
             _trackBarHorizontal.Scroll += TrackBarHorizontal_Scroll;
+            _toolTip.SetToolTip(_trackBarHorizontal, "Adjust horizontal mouse speed.");
 
             _textHorizontal = new TextBox
             {
@@ -932,6 +967,7 @@ namespace MouseSliderApp
             };
             _textHorizontal.KeyDown += TextHorizontal_KeyDown;
             _textHorizontal.Leave += TextHorizontal_Leave;
+            _toolTip.SetToolTip(_textHorizontal, "Precise horizontal speed value.");
 
             _labelVertical = new Label
             {
@@ -942,8 +978,8 @@ namespace MouseSliderApp
 
             _trackBarVertical = new TrackBar
             {
-                Minimum = 0,
-                Maximum = 10000,
+                Minimum = VerticalTrackBarMin,
+                Maximum = VerticalTrackBarMax,
                 TickFrequency = 2000,
                 Value = 0,
                 Width = 310,
@@ -951,6 +987,7 @@ namespace MouseSliderApp
                 BackColor = _movementCard.BackColor
             };
             _trackBarVertical.Scroll += TrackBarVertical_Scroll;
+            _toolTip.SetToolTip(_trackBarVertical, "Adjust vertical mouse speed.");
 
             _textVertical = new TextBox
             {
@@ -960,6 +997,7 @@ namespace MouseSliderApp
             };
             _textVertical.KeyDown += TextVertical_KeyDown;
             _textVertical.Leave += TextVertical_Leave;
+            _toolTip.SetToolTip(_textVertical, "Precise vertical speed value.");
 
             _movementCard.Controls.Add(movementTitle);
             _movementCard.Controls.Add(movementUnderline);
@@ -1024,10 +1062,12 @@ namespace MouseSliderApp
             _buttonSetKey1 = CreateFlatButton("Set Key 1", 90, 28);
             _buttonSetKey1.Location = new Point(180, 55);
             _buttonSetKey1.Click += (s, e) => StartCapturingKey(1);
+            _toolTip.SetToolTip(_buttonSetKey1, "Click, then press a key to bind Setup 1.");
 
             _buttonSaveSetup1 = CreateFlatButton("Save 1", 80, 28);
             _buttonSaveSetup1.Location = new Point(280, 55);
             _buttonSaveSetup1.Click += ButtonSaveSetup1_Click;
+            _toolTip.SetToolTip(_buttonSaveSetup1, "Save current speeds as Setup 1.");
 
             _labelSetup2 = new Label
             {
@@ -1047,10 +1087,12 @@ namespace MouseSliderApp
             _buttonSetKey2 = CreateFlatButton("Set Key 2", 90, 28);
             _buttonSetKey2.Location = new Point(180, 95);
             _buttonSetKey2.Click += (s, e) => StartCapturingKey(2);
+            _toolTip.SetToolTip(_buttonSetKey2, "Click, then press a key to bind Setup 2.");
 
             _buttonSaveSetup2 = CreateFlatButton("Save 2", 80, 28);
             _buttonSaveSetup2.Location = new Point(280, 95);
             _buttonSaveSetup2.Click += ButtonSaveSetup2_Click;
+            _toolTip.SetToolTip(_buttonSaveSetup2, "Save current speeds as Setup 2.");
 
             _setupCard.Controls.Add(setupTitle);
             _setupCard.Controls.Add(setupUnderline);
@@ -1064,7 +1106,7 @@ namespace MouseSliderApp
             _setupCard.Controls.Add(_buttonSetKey2);
             _setupCard.Controls.Add(_buttonSaveSetup2);
 
-            // NEW: summary labels showing saved H/V for each setup
+            // summary labels showing saved H/V for each setup
             _labelSetup1Summary = new Label
             {
                 AutoSize = true,
@@ -1117,6 +1159,7 @@ namespace MouseSliderApp
                     }
                 };
             }
+            _toolTip.SetToolTip(_settingsLogoWatermark, "App logo watermark.");
             content.Controls.Add(_settingsLogoWatermark);
 
             // Center layout + position watermark on resize
@@ -1135,8 +1178,7 @@ namespace MouseSliderApp
             SyncVerticalFromSlider();
         }
 
-        // ===== About page =====
-        private void BuildAboutPage()
+        private Panel BuildSecondaryPageHeader(string title, EventHandler backButtonClick)
         {
             var header = new Panel
             {
@@ -1145,24 +1187,15 @@ namespace MouseSliderApp
                 BackColor = BgHeader
             };
 
-            var backButton = new Button
-            {
-                Text = "← Back",
-                Width = 80,
-                Height = 30,
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(55, 65, 81),
-                ForeColor = Color.White,
-                Location = new Point(15, 15)
-            };
-            backButton.FlatAppearance.BorderSize = 0;
-            ApplyRoundedCorners(backButton, 6);
-            backButton.Click += (s, e) => ShowProfilesPage();
+            var backButton = CreateFlatButton("← Back", 80, 30);
+            backButton.Location = new Point(15, 15);
+            backButton.Click += backButtonClick;
+            _toolTip.SetToolTip(backButton, "Back to profiles list.");
 
             var titleLabel = new Label
             {
                 AutoSize = true,
-                Text = "About",
+                Text = title,
                 Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                 ForeColor = Color.White,
                 Location = new Point(backButton.Right + 10, 19)
@@ -1170,6 +1203,14 @@ namespace MouseSliderApp
 
             header.Controls.Add(backButton);
             header.Controls.Add(titleLabel);
+
+            return header;
+        }
+
+        // ===== About page =====
+        private void BuildAboutPage()
+        {
+            var header = BuildSecondaryPageHeader("About", (s, e) => ShowProfilesPage());
 
             var content = new Panel
             {
@@ -1295,38 +1336,7 @@ namespace MouseSliderApp
         // ===== Tutorial page =====
         private void BuildTutorialPage()
         {
-            var header = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 60,
-                BackColor = BgHeader
-            };
-
-            var backButton = new Button
-            {
-                Text = "← Back",
-                Width = 80,
-                Height = 30,
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(55, 65, 81),
-                ForeColor = Color.White,
-                Location = new Point(15, 15)
-            };
-            backButton.FlatAppearance.BorderSize = 0;
-            ApplyRoundedCorners(backButton, 6);
-            backButton.Click += (s, e) => ShowProfilesPage();
-
-            var titleLabel = new Label
-            {
-                AutoSize = true,
-                Text = "Tutorial",
-                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
-                ForeColor = Color.White,
-                Location = new Point(backButton.Right + 10, 19)
-            };
-
-            header.Controls.Add(backButton);
-            header.Controls.Add(titleLabel);
+            var header = BuildSecondaryPageHeader("Tutorial", (s, e) => ShowProfilesPage());
 
             var content = new Panel
             {
@@ -1510,13 +1520,19 @@ namespace MouseSliderApp
         // ==========================================================
         // Page switching
         // ==========================================================
+        private void ShowPage(Panel page)
+        {
+            _pageProfiles.Visible = page == _pageProfiles;
+            _pageSettings.Visible = page == _pageSettings;
+            _pageAbout.Visible = page == _pageAbout;
+            _pageTutorial.Visible = page == _pageTutorial;
+
+            page.BringToFront();
+        }
+
         private void ShowProfilesPage()
         {
-            _pageProfiles.Visible = true;
-            _pageProfiles.BringToFront();
-            _pageSettings.Visible = false;
-            _pageAbout.Visible = false;
-            _pageTutorial.Visible = false;
+            ShowPage(_pageProfiles);
         }
 
         private void ShowSettingsPage()
@@ -1526,29 +1542,17 @@ namespace MouseSliderApp
 
             _labelEditingProfile.Text = $"Editing: {_currentProfile.Name}";
             LoadProfileImage(_currentProfile.ImageFileName);
-            _pageSettings.Visible = true;
-            _pageSettings.BringToFront();
-            _pageProfiles.Visible = false;
-            _pageAbout.Visible = false;
-            _pageTutorial.Visible = false;
+            ShowPage(_pageSettings);
         }
 
         private void ShowAboutPage()
         {
-            _pageAbout.Visible = true;
-            _pageAbout.BringToFront();
-            _pageProfiles.Visible = false;
-            _pageSettings.Visible = false;
-            _pageTutorial.Visible = false;
+            ShowPage(_pageAbout);
         }
 
         private void ShowTutorialPage()
         {
-            _pageTutorial.Visible = true;
-            _pageTutorial.BringToFront();
-            _pageProfiles.Visible = false;
-            _pageSettings.Visible = false;
-            _pageAbout.Visible = false;
+            ShowPage(_pageTutorial);
         }
 
         // ==========================================================
@@ -2004,7 +2008,7 @@ namespace MouseSliderApp
             // remove focus so you don't keep typing in it by mistake.
             if (!goToSettings && _searchBox != null && _searchBox.Focused)
             {
-                this.ActiveControl = null; // drop focus from the search box
+                ActiveControl = null; // drop focus from the search box
             }
 
             _currentProfile = profile;
@@ -2076,7 +2080,7 @@ namespace MouseSliderApp
             LayoutProfilesTopBar();
         }
 
-        // NEW: summary labels for saved setups
+        // Summary labels for saved setups
         private void UpdateSetupSummaryLabels()
         {
             if (_labelSetup1Summary == null || _labelSetup2Summary == null)
@@ -2111,6 +2115,19 @@ namespace MouseSliderApp
         }
 
         // ==========================================================
+        // Reset helpers
+        // ==========================================================
+        private static void ResetProfileData(Profile profile)
+        {
+            profile.Horizontal1 = 0.0;
+            profile.Vertical1 = 0.0;
+            profile.Horizontal2 = 0.0;
+            profile.Vertical2 = 0.0;
+            profile.Key1 = Keys.None;
+            profile.Key2 = Keys.None;
+        }
+
+        // ==========================================================
         // Reset All (only speeds + keys)
         // ==========================================================
         private void ButtonResetAll_Click(object? sender, EventArgs e)
@@ -2126,12 +2143,7 @@ namespace MouseSliderApp
 
             foreach (var p in _profiles)
             {
-                p.Horizontal1 = 0.0;
-                p.Vertical1 = 0.0;
-                p.Horizontal2 = 0.0;
-                p.Vertical2 = 0.0;
-                p.Key1 = Keys.None;
-                p.Key2 = Keys.None;
+                ResetProfileData(p);
             }
 
             _horizontalSpeed = 0.0;
@@ -2193,12 +2205,7 @@ namespace MouseSliderApp
             if (result != DialogResult.Yes)
                 return;
 
-            _currentProfile.Horizontal1 = 0.0;
-            _currentProfile.Vertical1 = 0.0;
-            _currentProfile.Horizontal2 = 0.0;
-            _currentProfile.Vertical2 = 0.0;
-            _currentProfile.Key1 = Keys.None;
-            _currentProfile.Key2 = Keys.None;
+            ResetProfileData(_currentProfile);
 
             _currentSetupIndex = 1;
             _labelActiveSetup.Text = "Active setup: 1";
@@ -2246,7 +2253,11 @@ namespace MouseSliderApp
 
         private void LoadThumbnailImage(PictureBox target, string? imageFileName)
         {
-            target.Image = null;
+            if (target.Image != null)
+            {
+                target.Image.Dispose();
+                target.Image = null;
+            }
 
             if (string.IsNullOrWhiteSpace(imageFileName))
                 return;
@@ -2269,7 +2280,7 @@ namespace MouseSliderApp
 
         private void ClearPictureBoxImage()
         {
-            if (_pictureProfile.Image != null)
+            if (_pictureProfile?.Image != null)
             {
                 _pictureProfile.Image.Dispose();
                 _pictureProfile.Image = null;
@@ -2571,15 +2582,24 @@ namespace MouseSliderApp
             {
                 if (rightDown && !leftDown)
                 {
+                    // Right button held, waiting for left button to engage combo
                     _comboArmed = true;
                     _comboActive = false;
                 }
                 else if (rightDown && leftDown && _comboArmed)
                 {
+                    // Both buttons pressed after arming -> start movement
                     _comboActive = true;
                 }
-                else if (!rightDown || !leftDown)
+                else if (!rightDown)
                 {
+                    // Right button released -> fully reset combo
+                    _comboArmed = false;
+                    _comboActive = false;
+                }
+                else if (!leftDown)
+                {
+                    // Left button released but right still down -> keep armed but stop movement
                     _comboActive = false;
                 }
 
