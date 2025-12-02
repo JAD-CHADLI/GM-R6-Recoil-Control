@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -418,51 +418,16 @@ namespace MouseSliderApp
             // === UPDATED LAYOUT: Start + Reset centered, About + Tutorial on right ===
             header.Resize += (s, e) =>
             {
-                int top = 15;
-                int marginRight = 20;
-                int gap = 10;
+                _buttonResetAll.Location = new Point(
+                    header.Width - _buttonResetAll.Width - 20,
+                    15);
 
-                // Right side: Tutorial then About
-                int xRight = header.Width - marginRight;
-
-                if (_buttonTutorial != null)
-                {
-                    _buttonTutorial.Location = new Point(
-                        xRight - _buttonTutorial.Width,
-                        top);
-                    xRight = _buttonTutorial.Left - gap;
-                }
-
-                if (_buttonAbout != null)
-                {
-                    _buttonAbout.Location = new Point(
-                        xRight - _buttonAbout.Width,
-                        top);
-                }
-
-                // Center group: Start + RESET ALL
-                if (_buttonStart != null && _buttonResetAll != null)
-                {
-                    int groupWidth = _buttonStart.Width + gap + _buttonResetAll.Width;
-                    int centerX = header.Width / 2;
-                    int groupLeft = centerX - groupWidth / 2;
-                    if (groupLeft < 0) groupLeft = 0;
-
-                    _buttonStart.Location = new Point(groupLeft, top);
-                    _buttonResetAll.Location = new Point(_buttonStart.Right + gap, top);
-                }
+                _buttonStart.Location = new Point(
+                    _buttonResetAll.Left - _buttonStart.Width - 10,
+                    15);
             };
 
-            header.Paint += (s, e) =>
-            {
-                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                using (var pen = new Pen(Color.FromArgb(31, 41, 55)))
-                {
-                    e.Graphics.DrawLine(pen, 0, header.Height - 1, header.Width, header.Height - 1);
-                }
-            };
-
-            // top bar with category + selected label + search
+            // top bar with category + selected label
             var topBar = new Panel
             {
                 Dock = DockStyle.Top,
@@ -472,16 +437,17 @@ namespace MouseSliderApp
             };
             _profilesTopBar = topBar;
 
-            topBar.Paint += (s, e) =>
+            _labelCategory = new Label
             {
-                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                using (var pen = new Pen(Color.FromArgb(31, 41, 55)))
-                {
-                    e.Graphics.DrawLine(pen, 0, topBar.Height - 1, topBar.Width, topBar.Height - 1);
-                }
+                AutoSize = true,
+                Text = "Side",
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold)
             };
 
+            // A = Attackers
             _buttonCategoryA = CreateFlatButton("Attackers", 100, 28);
+
+            // B = Defenders
             _buttonCategoryB = CreateFlatButton("Defenders", 100, 28);
 
             StyleSegmentButton(_buttonCategoryA, true);
@@ -509,26 +475,37 @@ namespace MouseSliderApp
             {
                 AutoSize = true,
                 Text = "Selected profile: (none)",
-                ForeColor = TextMuted
+                ForeColor = Color.FromArgb(180, 191, 210)
             };
 
-            _labelSelectedSetup = new Label
-            {
-                AutoSize = true,
-                Text = "Setup: (none)",
-                ForeColor = TextMuted
-            };
-
+            topBar.Controls.Add(_labelCategory);
             topBar.Controls.Add(_buttonCategoryA);
             topBar.Controls.Add(_buttonCategoryB);
             topBar.Controls.Add(_searchBox);
             topBar.Controls.Add(_labelSelectedProfile);
-            topBar.Controls.Add(_labelSelectedSetup);
 
-            topBar.Resize += (s, e) => LayoutProfilesTopBar();
-            LayoutProfilesTopBar();
+            // center categories + keep "Selected" on the right
+            topBar.Resize += (s, e) =>
+            {
+                int gap = 10;
+                int y = 10;
 
-            // profile cards container + FAKE custom scrollbar
+                // total width of label + buttons + gaps
+                int totalWidth = _labelCategory.Width + gap + _buttonCategoryA.Width + gap + _buttonCategoryB.Width;
+                int startX = (topBar.ClientSize.Width - totalWidth) / 2;
+                if (startX < 10) startX = 10;
+
+                _labelCategory.Location = new Point(startX, y + 3);
+                _buttonCategoryA.Location = new Point(_labelCategory.Right + gap, y);
+                _buttonCategoryB.Location = new Point(_buttonCategoryA.Right + gap, y);
+
+                // selected text stays aligned to the right
+                _labelSelectedProfile.Location = new Point(
+                    topBar.ClientSize.Width - _labelSelectedProfile.Width - 20,
+                    y + 3);
+            };
+
+            // profile cards container + custom scrollbar
             _profilesContainer = new Panel
             {
                 Dock = DockStyle.Fill,
@@ -538,9 +515,12 @@ namespace MouseSliderApp
             _profilesScrollTrack = new Panel
             {
                 Dock = DockStyle.Right,
-                Width = 6,
-                BackColor = BgHeader
+                Width = 12,
+                SmallChange = 20,
+                LargeChange = 60,
+                BackColor = Color.FromArgb(15, 23, 42)
             };
+            _profilesScrollBar.Scroll += ProfilesScrollBar_Scroll;
 
             _profilesScrollThumb = new Panel
             {
@@ -701,30 +681,24 @@ namespace MouseSliderApp
 
             bool scrollable = maxOffset > 0;
 
-            if (_profilesScrollTrack != null && _profilesScrollThumb != null)
+            if (!_profilesScrollBar.Enabled)
             {
-                if (!scrollable)
-                {
-                    _profilesScrollThumb.Visible = false;
-                }
-                else
-                {
-                    _profilesScrollThumb.Visible = true;
+                _profilesScrollOffset = 0;
+            }
+            else
+            {
+                if (_profilesScrollOffset < _profilesScrollBar.Minimum)
+                    _profilesScrollOffset = _profilesScrollBar.Minimum;
+                if (_profilesScrollOffset > _profilesScrollBar.Maximum)
+                    _profilesScrollOffset = _profilesScrollBar.Maximum;
+            }
 
-                    int trackHeight = _profilesScrollTrack.ClientSize.Height;
-                    if (trackHeight <= 0) trackHeight = 1;
+            if (_profilesScrollBar.Enabled)
+                _profilesScrollBar.Value = _profilesScrollOffset;
 
-                    double viewportRatio = viewportHeight / (double)totalContentHeight;
-                    if (viewportRatio > 1.0) viewportRatio = 1.0;
-                    if (viewportRatio < 0.1) viewportRatio = 0.1;
-
-                    int thumbHeight = Math.Max(20, (int)(trackHeight * viewportRatio));
-                    if (thumbHeight > trackHeight) thumbHeight = trackHeight;
-                    _profilesScrollThumb.Height = thumbHeight;
-
-                    double scrollRatio = maxOffset == 0 ? 0.0 : _profilesScrollOffset / (double)maxOffset;
-                    int thumbMaxTravel = trackHeight - thumbHeight;
-                    if (thumbMaxTravel < 0) thumbMaxTravel = 0;
+            // move the whole grid up/down
+            _profilesPanel.Location = new Point(0, -_profilesScrollOffset);
+        }
 
                     int thumbTop = (int)(thumbMaxTravel * scrollRatio);
                     if (thumbTop < 0) thumbTop = 0;
@@ -840,25 +814,13 @@ namespace MouseSliderApp
             var content = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = BgSettings,
-                Padding = new Padding(0)
-            };
-
-            var settingsLayout = new Panel
-            {
-                BackColor = Color.Transparent
-            };
-
-            // hero frame + big image
-            var operatorFrame = new Panel
-            {
-                Size = new Size(280, 300),
-                BackColor = CardNormalColor,
-                Padding = new Padding(12)
+                BackColor = Color.FromArgb(15, 23, 42),
+                Padding = new Padding(20)
             };
             ApplyRoundedCorners(operatorFrame, 12);
             operatorFrame.Location = new Point(0, 0);
 
+            // big image
             _pictureProfile = new PictureBox
             {
                 Dock = DockStyle.Fill,
@@ -866,18 +828,8 @@ namespace MouseSliderApp
                 SizeMode = PictureBoxSizeMode.Zoom,
                 BackColor = Color.FromArgb(15, 23, 42)
             };
-            operatorFrame.Controls.Add(_pictureProfile);
 
-            var operatorCaption = new Label
-            {
-                AutoSize = true,
-                Text = "Current operator",
-                ForeColor = TextMuted,
-                Font = new Font("Segoe UI", 8F, FontStyle.Regular)
-            };
-            operatorCaption.Location = new Point(operatorFrame.Left + 4, operatorFrame.Bottom + 6);
-
-            // movement card
+            // movement card (without start button)
             _movementCard = new Panel
             {
                 BackColor = CardNormalColor,
@@ -1064,332 +1016,15 @@ namespace MouseSliderApp
             _setupCard.Controls.Add(_buttonSetKey2);
             _setupCard.Controls.Add(_buttonSaveSetup2);
 
-            // NEW: summary labels showing saved H/V for each setup
-            _labelSetup1Summary = new Label
-            {
-                AutoSize = true,
-                ForeColor = TextMuted,
-                Location = new Point(10, 140),
-                Text = "Setup 1: H = 0.000, V = 0.000"
-            };
-
-            _labelSetup2Summary = new Label
-            {
-                AutoSize = true,
-                ForeColor = TextMuted,
-                Location = new Point(10, 160),
-                Text = "Setup 2: H = 0.000, V = 0.000"
-            };
-
-            _setupCard.Controls.Add(_labelSetup1Summary);
-            _setupCard.Controls.Add(_labelSetup2Summary);
-
-            settingsLayout.Controls.Add(operatorFrame);
-            settingsLayout.Controls.Add(operatorCaption);
-            settingsLayout.Controls.Add(_movementCard);
-            settingsLayout.Controls.Add(_setupCard);
-
-            int layoutWidth = Math.Max(operatorFrame.Right, _movementCard.Right);
-            int layoutHeight = Math.Max(operatorFrame.Bottom + 30, _setupCard.Bottom);
-            settingsLayout.Size = new Size(layoutWidth, layoutHeight);
-
-            content.Controls.Add(settingsLayout);
-
-            // WATERMARK logo bottom-right on settings page
-            _settingsLogoWatermark = new PictureBox
-            {
-                Size = new Size(80, 80),
-                SizeMode = PictureBoxSizeMode.Zoom,
-                BackColor = Color.Transparent
-            };
-            if (_appLogoImage != null)
-            {
-                _settingsLogoWatermark.Image = _appLogoImage;
-            }
-            else
-            {
-                _settingsLogoWatermark.Paint += (s, e) =>
-                {
-                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                    using (var pen = new Pen(Color.FromArgb(55, 65, 81), 2))
-                    {
-                        e.Graphics.DrawRectangle(pen, 4, 4, _settingsLogoWatermark.Width - 8, _settingsLogoWatermark.Height - 8);
-                    }
-                };
-            }
-            content.Controls.Add(_settingsLogoWatermark);
-
-            // Center layout + position watermark on resize
-            content.Resize += (s, e) =>
-            {
-                CenterInnerPanel(settingsLayout, content);
-                PositionSettingsLogoWatermark(content);
-            };
-            CenterInnerPanel(settingsLayout, content);
-            PositionSettingsLogoWatermark(content);
+            content.Controls.Add(_pictureProfile);
+            content.Controls.Add(_movementCard);
+            content.Controls.Add(_setupCard);
 
             _pageSettings.Controls.Add(content);
             _pageSettings.Controls.Add(header);
 
             SyncHorizontalFromSlider();
             SyncVerticalFromSlider();
-        }
-
-        // ===== About page =====
-        private void BuildAboutPage()
-        {
-            var header = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 60,
-                BackColor = BgHeader
-            };
-
-            var backButton = new Button
-            {
-                Text = "← Back",
-                Width = 80,
-                Height = 30,
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(55, 65, 81),
-                ForeColor = Color.White,
-                Location = new Point(15, 15)
-            };
-            backButton.FlatAppearance.BorderSize = 0;
-            ApplyRoundedCorners(backButton, 6);
-            backButton.Click += (s, e) => ShowProfilesPage();
-
-            var titleLabel = new Label
-            {
-                AutoSize = true,
-                Text = "About",
-                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
-                ForeColor = Color.White,
-                Location = new Point(backButton.Right + 10, 19)
-            };
-
-            header.Controls.Add(backButton);
-            header.Controls.Add(titleLabel);
-
-            var content = new Panel
-            {
-                Dock = DockStyle.Fill,
-                BackColor = BgSettings
-            };
-
-            var layout = new Panel
-            {
-                BackColor = Color.Transparent,
-                Size = new Size(500, 320)
-            };
-
-            var logoBox = new PictureBox
-            {
-                Size = new Size(180, 180),
-                SizeMode = PictureBoxSizeMode.Zoom,
-                BackColor = Color.Transparent
-            };
-
-            // Make About logo circular
-            MakePictureCircular(logoBox);
-
-            // Use a different logo ONLY for the About page if available
-            try
-            {
-                string aboutLogoPath = Path.Combine(_imagesFolder, "AboutLogo.png");
-                if (File.Exists(aboutLogoPath))
-                {
-                    using (var img = Image.FromFile(aboutLogoPath))
-                    {
-                        logoBox.Image = new Bitmap(img);
-                    }
-                }
-            }
-            catch
-            {
-                // ignore, we'll just fall back to the drawn placeholder
-            }
-
-            // If no custom AboutLogo.png found, draw a simple placeholder
-            if (logoBox.Image == null)
-            {
-                logoBox.Paint += (s, e) =>
-                {
-                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                    using (var pen = new Pen(AccentPrimarySoft, 3))
-                    {
-                        e.Graphics.DrawRectangle(pen, 8, 8, logoBox.Width - 16, logoBox.Height - 16);
-                    }
-                };
-            }
-
-            var madeByLabel = new Label
-            {
-                AutoSize = true,
-                Text = "Made by GAMMO",
-                Font = new Font("Segoe UI", 14F, FontStyle.Bold),
-                ForeColor = Color.White
-            };
-
-            var githubLink = new LinkLabel
-            {
-                AutoSize = true,
-                Text = "GitHub: JAD-CHADLI",
-                Font = new Font("Segoe UI", 10F, FontStyle.Regular),
-                LinkColor = AccentPrimary,
-                ActiveLinkColor = Color.White,
-                VisitedLinkColor = AccentPrimarySoft
-            };
-            githubLink.LinkBehavior = LinkBehavior.HoverUnderline;
-            githubLink.LinkClicked += (s, e) =>
-            {
-                try
-                {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "https://github.com/JAD-CHADLI",
-                        UseShellExecute = true
-                    });
-                }
-                catch
-                {
-                    MessageBox.Show(
-                        "Could not open the GitHub link.",
-                        "Error",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error);
-                }
-            };
-
-            layout.Controls.Add(logoBox);
-            layout.Controls.Add(madeByLabel);
-            layout.Controls.Add(githubLink);
-
-            void Relayout()
-            {
-                logoBox.Location = new Point(
-                    (layout.Width - logoBox.Width) / 2,
-                    10);
-
-                madeByLabel.Location = new Point(
-                    (layout.Width - madeByLabel.Width) / 2,
-                    logoBox.Bottom + 15);
-
-                githubLink.Location = new Point(
-                    (layout.Width - githubLink.Width) / 2,
-                    madeByLabel.Bottom + 10);
-            }
-
-            layout.Resize += (s, e) => Relayout();
-            Relayout();
-
-            content.Controls.Add(layout);
-
-            content.Resize += (s, e) => CenterInnerPanel(layout, content);
-            CenterInnerPanel(layout, content);
-
-            _pageAbout.Controls.Add(content);
-            _pageAbout.Controls.Add(header);
-        }
-
-        // ===== Tutorial page =====
-        private void BuildTutorialPage()
-        {
-            var header = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 60,
-                BackColor = BgHeader
-            };
-
-            var backButton = new Button
-            {
-                Text = "← Back",
-                Width = 80,
-                Height = 30,
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(55, 65, 81),
-                ForeColor = Color.White,
-                Location = new Point(15, 15)
-            };
-            backButton.FlatAppearance.BorderSize = 0;
-            ApplyRoundedCorners(backButton, 6);
-            backButton.Click += (s, e) => ShowProfilesPage();
-
-            var titleLabel = new Label
-            {
-                AutoSize = true,
-                Text = "Tutorial",
-                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
-                ForeColor = Color.White,
-                Location = new Point(backButton.Right + 10, 19)
-            };
-
-            header.Controls.Add(backButton);
-            header.Controls.Add(titleLabel);
-
-            var content = new Panel
-            {
-                Dock = DockStyle.Fill,
-                BackColor = BgSettings
-            };
-
-            var layout = new Panel
-            {
-                BackColor = Color.Transparent,
-                Size = new Size(700, 400)
-            };
-
-            var tutorialTitle = new Label
-            {
-                AutoSize = true,
-                Text = "How to use Mouse Slider Controller",
-                Font = new Font("Segoe UI", 14F, FontStyle.Bold),
-                ForeColor = Color.White
-            };
-
-            var tutorialBody = new Label
-            {
-                AutoSize = true,
-                MaximumSize = new Size(650, 0),
-                ForeColor = TextMuted,
-                Font = new Font("Segoe UI", 11F, FontStyle.Regular),
-                Text =
-                    "1. Choose a side (Attackers / Defenders) at the top.\n" +
-                    "2. Use the search box on the left or scroll to find the operator you want.\n" +
-                    "3. Click a profile card to select it. Press \"Modify\" on a profile to open the settings page.\n" +
-                    "4. In the Movement card, set Horizontal and Vertical speed with the sliders or by typing values.\n" +
-                    "5. Choose a key for Setup 1 and Setup 2, then click \"Save 1\" / \"Save 2\" to store each setup for this profile.\n" +
-                    "6. Back on the main page, press \"Start\" to arm the tool.\n" +
-                    "   Hold RIGHT mouse button, then press LEFT mouse button to start the movement.\n" +
-                    "7. Press your setup keys in-game to quickly switch between Setup 1 and Setup 2 for the selected profile.\n" +
-                    "8. Use \"Reset profile\" to clear settings for the current operator, or \"RESET ALL\" to clear all profiles."
-            };
-
-            layout.Controls.Add(tutorialTitle);
-            layout.Controls.Add(tutorialBody);
-
-            void Relayout()
-            {
-                tutorialTitle.Location = new Point(
-                    (layout.Width - tutorialTitle.Width) / 2,
-                    10);
-
-                tutorialBody.Location = new Point(
-                    (layout.Width - tutorialBody.Width) / 2,
-                    tutorialTitle.Bottom + 20);
-            }
-
-            layout.Resize += (s, e) => Relayout();
-            Relayout();
-
-            content.Controls.Add(layout);
-
-            content.Resize += (s, e) => CenterInnerPanel(layout, content);
-            CenterInnerPanel(layout, content);
-
-            _pageTutorial.Controls.Add(content);
-            _pageTutorial.Controls.Add(header);
         }
 
         private Button CreateFlatButton(string text, int width, int height)
@@ -1406,7 +1041,9 @@ namespace MouseSliderApp
             btn.FlatAppearance.BorderSize = 0;
             btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(75, 85, 99);
             btn.FlatAppearance.MouseDownBackColor = Color.FromArgb(31, 41, 55);
+
             ApplyRoundedCorners(btn, 6);
+
             return btn;
         }
 
@@ -1455,45 +1092,6 @@ namespace MouseSliderApp
             control.Resize += UpdateRegion;
         }
 
-        // Helper to make a PictureBox circular (for About logo)
-        private void MakePictureCircular(PictureBox pb)
-        {
-            void UpdateRegion(object? sender, EventArgs e)
-            {
-                if (pb.Width <= 0 || pb.Height <= 0)
-                    return;
-
-                using (var path = new GraphicsPath())
-                {
-                    path.AddEllipse(0, 0, pb.Width - 1, pb.Height - 1);
-                    pb.Region = new Region(path);
-                }
-            }
-
-            pb.HandleCreated += UpdateRegion;
-            pb.Resize += UpdateRegion;
-        }
-
-        private void CenterInnerPanel(Control inner, Control outer)
-        {
-            int x = (outer.ClientSize.Width - inner.Width) / 2;
-            int y = (outer.ClientSize.Height - inner.Height) / 2;
-            if (x < 0) x = 0;
-            if (y < 0) y = 0;
-            inner.Location = new Point(x, y);
-        }
-
-        private void PositionSettingsLogoWatermark(Control content)
-        {
-            if (_settingsLogoWatermark == null) return;
-            int margin = 18;
-            int x = content.ClientSize.Width - _settingsLogoWatermark.Width - margin;
-            int y = content.ClientSize.Height - _settingsLogoWatermark.Height - margin;
-            if (x < margin) x = margin;
-            if (y < margin) y = margin;
-            _settingsLogoWatermark.Location = new Point(x, y);
-        }
-
         // smooth drawing (reduce flicker)
         private void SetDoubleBuffered(Control c)
         {
@@ -1529,8 +1127,6 @@ namespace MouseSliderApp
             _pageSettings.Visible = true;
             _pageSettings.BringToFront();
             _pageProfiles.Visible = false;
-            _pageAbout.Visible = false;
-            _pageTutorial.Visible = false;
         }
 
         private void ShowAboutPage()
@@ -1712,12 +1308,6 @@ namespace MouseSliderApp
         {
             SaveProfilesToFile();
             ClearPictureBoxImage();
-
-            if (_appLogoImage != null)
-            {
-                _appLogoImage.Dispose();
-                _appLogoImage = null;
-            }
         }
 
         // ==========================================================
@@ -1734,39 +1324,6 @@ namespace MouseSliderApp
                 _selectedProfileCard = null;
             }
 
-            _currentProfile = null;
-            _labelSelectedProfile.Text = "Selected profile: (none)";
-            _labelSelectedSetup.Text = "Setup: (none)";
-
-            if (_textKey1 != null) _textKey1.Text = "None";
-            if (_textKey2 != null) _textKey2.Text = "None";
-            _currentSetupIndex = 1;
-            if (_labelActiveSetup != null) _labelActiveSetup.Text = "Active setup: 1";
-
-            ClearPictureBoxImage();
-
-            StyleSegmentButton(_buttonCategoryA, category == "A");
-            StyleSegmentButton(_buttonCategoryB, category == "B");
-
-            // reset search placeholder when switching side
-            if (_searchBox != null)
-            {
-                _searchHasPlaceholder = true;
-                _searchBox.ForeColor = TextMuted;
-                _searchBox.Text = SearchPlaceholder;
-            }
-            _currentSearchText = string.Empty;
-
-            RefreshProfileCards();
-        }
-
-        // (2a) search + category filtering
-        private void RefreshProfileCards()
-        {
-            if (_profilesPanel == null)
-                return;
-
-            _profilesPanel.SuspendLayout();
             _profilesPanel.Controls.Clear();
             _profilesScrollOffset = 0;
 
@@ -1797,23 +1354,11 @@ namespace MouseSliderApp
 
             if (_profilesPanel.Controls.Count > 0)
             {
-                if (_currentProfile == null || existingSelectedCard == null)
+                if (_profilesPanel.Controls[0] is Panel firstCard &&
+                    firstCard.Tag is Profile firstProfile)
                 {
-                    if (_profilesPanel.Controls[0] is Panel firstCard &&
-                        firstCard.Tag is Profile firstProfile)
-                    {
-                        SelectProfile(firstProfile, firstCard, goToSettings: false);
-                    }
+                    SelectProfile(firstProfile, firstCard, goToSettings: false);
                 }
-                else
-                {
-                    HighlightSelectedCard(existingSelectedCard);
-                }
-            }
-            else
-            {
-                _currentProfile = null;
-                UpdateSelectedProfileDetails();
             }
 
             CenterProfiles();
@@ -1935,16 +1480,15 @@ namespace MouseSliderApp
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(55, 65, 81),
                 ForeColor = Color.White,
-                Location = new Point(
-                    (card.Width - 120) / 2,
-                    nameLabel.Bottom + 5
-                ),
-                Cursor = Cursors.Hand
+                Visible = false
             };
-            modifyButton.FlatAppearance.BorderSize = 0;
-            modifyButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(75, 85, 99);
-            modifyButton.FlatAppearance.MouseDownBackColor = Color.FromArgb(31, 41, 55);
-            modifyButton.Click += (s, e) => StartModifyProfile(profile, card);
+            ApplyRoundedCorners(activeBadge, 9);
+
+            activeBadge.Location = new Point(card.Width - activeBadge.Width - 8, 8);
+            card.Resize += (s, e) =>
+            {
+                activeBadge.Location = new Point(card.Width - activeBadge.Width - 8, 8);
+            };
 
             card.Controls.Add(activeBadge);
             card.Controls.Add(thumb);
@@ -2053,49 +1597,6 @@ namespace MouseSliderApp
             }
         }
 
-        // show active setup + speeds in top bar
-        private void UpdateSelectedProfileDetails()
-        {
-            if (_labelSelectedProfile == null || _labelSelectedSetup == null)
-                return;
-
-            if (_currentProfile == null)
-            {
-                _labelSelectedProfile.Text = "Selected profile: (none)";
-                _labelSelectedSetup.Text = "Setup: (none)";
-                LayoutProfilesTopBar();
-                return;
-            }
-
-            _labelSelectedProfile.Text = $"Selected: {_currentProfile.Name}";
-
-            string hText = _horizontalSpeed.ToString("0.000", CultureInfo.InvariantCulture);
-            string vText = _verticalSpeed.ToString("0.000", CultureInfo.InvariantCulture);
-            _labelSelectedSetup.Text = $"Setup: {_currentSetupIndex} (H: {hText}, V: {vText})";
-
-            LayoutProfilesTopBar();
-        }
-
-        // NEW: summary labels for saved setups
-        private void UpdateSetupSummaryLabels()
-        {
-            if (_labelSetup1Summary == null || _labelSetup2Summary == null)
-                return;
-
-            if (_currentProfile == null)
-            {
-                _labelSetup1Summary.Text = "Setup 1: (no values)";
-                _labelSetup2Summary.Text = "Setup 2: (no values)";
-                return;
-            }
-
-            _labelSetup1Summary.Text =
-                $"Setup 1: H = {_currentProfile.Horizontal1:0.000}, V = {_currentProfile.Vertical1:0.000}";
-
-            _labelSetup2Summary.Text =
-                $"Setup 2: H = {_currentProfile.Horizontal2:0.000}, V = {_currentProfile.Vertical2:0.000}";
-        }
-
         private void LoadProfile(Profile profile)
         {
             _currentSetupIndex = 1;
@@ -2106,8 +1607,8 @@ namespace MouseSliderApp
 
             ApplyProfileSetup(profile, 1);
 
-            // update summary labels when profile changes
-            UpdateSetupSummaryLabels();
+            // Do NOT load big image here anymore
+            // LoadProfileImage(profile.ImageFileName);
         }
 
         // ==========================================================
@@ -2149,12 +1650,6 @@ namespace MouseSliderApp
             _textKey1.Text = "None";
             _textKey2.Text = "None";
 
-            if (_currentProfile != null)
-            {
-                UpdateSelectedProfileDetails();
-                UpdateSetupSummaryLabels(); // keep summaries in sync
-            }
-
             try
             {
                 if (File.Exists(_dataFilePath))
@@ -2167,53 +1662,6 @@ namespace MouseSliderApp
             MessageBox.Show(
                 "All speeds and keybinds have been reset.",
                 "Reset complete",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
-        }
-
-        // Per-profile reset
-        private void ButtonResetProfile_Click(object? sender, EventArgs e)
-        {
-            if (_currentProfile == null)
-            {
-                MessageBox.Show(
-                    "No profile is selected.",
-                    "Reset profile",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
-                return;
-            }
-
-            var result = MessageBox.Show(
-                $"This will reset speeds and keybinds for {_currentProfile.Name}.\nAre you sure?",
-                "Reset this profile",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Warning);
-
-            if (result != DialogResult.Yes)
-                return;
-
-            _currentProfile.Horizontal1 = 0.0;
-            _currentProfile.Vertical1 = 0.0;
-            _currentProfile.Horizontal2 = 0.0;
-            _currentProfile.Vertical2 = 0.0;
-            _currentProfile.Key1 = Keys.None;
-            _currentProfile.Key2 = Keys.None;
-
-            _currentSetupIndex = 1;
-            _labelActiveSetup.Text = "Active setup: 1";
-
-            ApplyProfileSetup(_currentProfile, 1);
-
-            _textKey1.Text = "None";
-            _textKey2.Text = "None";
-
-            // update summary labels after reset
-            UpdateSetupSummaryLabels();
-
-            MessageBox.Show(
-                $"Profile {_currentProfile.Name} has been reset.",
-                "Profile reset",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
         }
