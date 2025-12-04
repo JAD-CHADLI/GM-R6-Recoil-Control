@@ -200,6 +200,31 @@ namespace MouseSliderApp
         [DllImport("user32.dll")]
         private static extern short GetAsyncKeyState(Keys vKey);
 
+        [DllImport("user32.dll")]
+        private static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct INPUT
+        {
+            public uint type;
+            public MOUSEINPUT mi;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct MOUSEINPUT
+        {
+            public int dx;
+            public int dy;
+            public uint mouseData;
+            public uint dwFlags;
+            public uint time;
+            public IntPtr dwExtraInfo;
+        }
+
+        private const uint INPUT_MOUSE = 0;
+        private const uint MOUSEEVENTF_MOVE = 0x0001;
+
+
         public Form1()
         {
             KeyPreview = true;
@@ -264,7 +289,7 @@ namespace MouseSliderApp
         // ==========================================================
         private void InitializeUi()
         {
-            Text = "Mouse Slider Controller";
+            Text = "GM R6 Recoil Control";
             ClientSize = new Size(1100, 650);
             StartPosition = FormStartPosition.CenterScreen;
             Font = new Font("Segoe UI", 9F);
@@ -389,7 +414,7 @@ namespace MouseSliderApp
             var titleLabel = new Label
             {
                 AutoSize = true,
-                Text = "Precision Mouse Profiles",
+                Text = "GM R6 Recoil Control",
                 Font = new Font("Segoe UI", 16F, FontStyle.Bold),
                 ForeColor = Color.White,
                 Location = new Point(logoBox.Right + 12, 14)
@@ -1353,7 +1378,7 @@ namespace MouseSliderApp
             var tutorialTitle = new Label
             {
                 AutoSize = true,
-                Text = "How to use Mouse Slider Controller",
+                Text = "How to use GM R6 Recoil Control",
                 Font = new Font("Segoe UI", 14F, FontStyle.Bold),
                 ForeColor = Color.White
             };
@@ -2567,16 +2592,16 @@ namespace MouseSliderApp
 
         private void MovementTimer_Tick(object? sender, EventArgs e)
         {
+            // Handle setup keybinds globally
             if (_currentProfile != null)
             {
                 CheckKeybind(_currentProfile.Key1, ref _key1WasDown, 1);
                 CheckKeybind(_currentProfile.Key2, ref _key2WasDown, 2);
             }
 
-            MouseButtons buttons = Control.MouseButtons;
-
-            bool rightDown = (buttons & MouseButtons.Right) == MouseButtons.Right;
-            bool leftDown = (buttons & MouseButtons.Left) == MouseButtons.Left;
+            // GLOBAL mouse state (works even when game is fullscreen)
+            bool rightDown = IsKeyPressed(Keys.RButton);
+            bool leftDown = IsKeyPressed(Keys.LButton);
 
             if (_isActive)
             {
@@ -2615,6 +2640,7 @@ namespace MouseSliderApp
             }
         }
 
+
         private bool IsKeyPressed(Keys key)
         {
             if (key == Keys.None)
@@ -2651,8 +2677,24 @@ namespace MouseSliderApp
             if (dx == 0 && dy == 0)
                 return;
 
-            Point current = Cursor.Position;
-            Cursor.Position = new Point(current.X + dx, current.Y + dy);
+            // Send relative mouse movement so games see it as real input
+            var input = new INPUT
+            {
+                type = INPUT_MOUSE,
+                mi = new MOUSEINPUT
+                {
+                    dx = dx,
+                    dy = dy,
+                    mouseData = 0,
+                    dwFlags = MOUSEEVENTF_MOVE,   // relative move
+                    time = 0,
+                    dwExtraInfo = IntPtr.Zero
+                }
+            };
+
+            INPUT[] inputs = { input };
+            SendInput(1, inputs, Marshal.SizeOf(typeof(INPUT)));
         }
+
     }
 }
