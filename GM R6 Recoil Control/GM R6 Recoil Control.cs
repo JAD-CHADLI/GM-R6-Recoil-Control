@@ -1591,10 +1591,13 @@ namespace MouseSliderApp
         // ==========================================================
         // Create profiles (static names & images)
         // ==========================================================
+        // ==========================================================
+        // Create profiles (static names & images)
+        // ==========================================================
         private void CreateProfiles()
         {
             // Category A – Attackers
-            _profiles.Add(new Profile("A", 37, "Striker", "A_Striker.png"));   // first attacker
+            _profiles.Add(new Profile("A", 37, "Striker", "A_Striker.png"));   // <<< first
 
             _profiles.Add(new Profile("A", 1, "Sledge", "A_Sledge.png"));
             _profiles.Add(new Profile("A", 2, "Thatcher", "A_Thatcher.png"));
@@ -1634,7 +1637,7 @@ namespace MouseSliderApp
             _profiles.Add(new Profile("A", 38, "Rauora", "A_Rauora.png"));
 
             // Category B – Defenders
-            _profiles.Add(new Profile("B", 36, "Sentry", "B_Sentry.png"));     // first defender
+            _profiles.Add(new Profile("B", 36, "Sentry", "B_Sentry.png"));     // first
 
             _profiles.Add(new Profile("B", 1, "Smoke", "B_Smoke.png"));
             _profiles.Add(new Profile("B", 2, "Mute", "B_Mute.png"));
@@ -1666,6 +1669,10 @@ namespace MouseSliderApp
             _profiles.Add(new Profile("B", 28, "Melusi", "B_Melusi.png"));
             _profiles.Add(new Profile("B", 29, "Thunderbird", "B_Thunderbird.png"));
             _profiles.Add(new Profile("B", 30, "Aruni", "B_Aruni.png"));
+
+            // >>> NEW: Thorn before Azami <<<
+            _profiles.Add(new Profile("B", 38, "Thorn", "B_Thorn.png"));
+
             _profiles.Add(new Profile("B", 31, "Azami", "B_Azami.png"));
             _profiles.Add(new Profile("B", 32, "Solis", "B_Solis.png"));
             _profiles.Add(new Profile("B", 33, "Fenrir", "B_Fenrir.png"));
@@ -1673,6 +1680,7 @@ namespace MouseSliderApp
             _profiles.Add(new Profile("B", 35, "Skopós", "B_Skopos.png"));
             _profiles.Add(new Profile("B", 37, "Denari", "B_Denari.png"));
         }
+
 
         // ==========================================================
         // Save / Load profiles to JSON (speeds + keys only)
