@@ -1341,29 +1341,10 @@ namespace MouseSliderApp
         }
 
         // ===== Tutorial page =====
+        // ===== Tutorial page =====
         private void BuildTutorialPage()
         {
             var header = BuildSecondaryPageHeader("Tutorial", (s, e) => ShowProfilesPage());
-
-            // Reset All button ONLY in Tutorial header now
-            _buttonResetAll = CreateFlatButton("RESET ALL", 120, 30);
-            _buttonResetAll.BackColor = AccentDanger;
-            _buttonResetAll.ForeColor = Color.White;
-            _buttonResetAll.FlatAppearance.BorderSize = 0;
-            _buttonResetAll.Click += ButtonResetAll_Click;   // reuse same logic
-            _toolTip.SetToolTip(_buttonResetAll, "Reset speeds and keybinds for all profiles.");
-
-            header.Controls.Add(_buttonResetAll);
-
-            // Position it on the right side of the Tutorial header
-            header.Resize += (s, e) =>
-            {
-                int marginRight = 20;
-                int top = 15;
-                _buttonResetAll.Location = new Point(
-                    header.Width - _buttonResetAll.Width - marginRight,
-                    top);
-            };
 
             var content = new Panel
             {
@@ -1422,12 +1403,36 @@ namespace MouseSliderApp
 
             content.Controls.Add(layout);
 
-            content.Resize += (s, e) => CenterInnerPanel(layout, content);
+            // ==== RESET ALL button bottom-right INSIDE the tutorial page ====
+            _buttonResetAll = CreateFlatButton("RESET ALL", 120, 30);
+            _buttonResetAll.BackColor = AccentDanger;
+            _buttonResetAll.ForeColor = Color.White;
+            _buttonResetAll.FlatAppearance.BorderSize = 0;
+            _buttonResetAll.Click += ButtonResetAll_Click;
+            _toolTip.SetToolTip(_buttonResetAll, "Reset speeds and keybinds for all profiles.");
+            content.Controls.Add(_buttonResetAll);
+
+            // Center tutorial text and keep RESET ALL at bottom-right
+            content.Resize += (s, e) =>
+            {
+                CenterInnerPanel(layout, content);
+
+                int margin = 20;
+                _buttonResetAll.Location = new Point(
+                    content.ClientSize.Width - _buttonResetAll.Width - margin,
+                    content.ClientSize.Height - _buttonResetAll.Height - margin);
+            };
+
+            // Initial positioning
             CenterInnerPanel(layout, content);
+            _buttonResetAll.Location = new Point(
+                content.ClientSize.Width - _buttonResetAll.Width - 20,
+                content.ClientSize.Height - _buttonResetAll.Height - 20);
 
             _pageTutorial.Controls.Add(content);
             _pageTutorial.Controls.Add(header);
         }
+
 
 
         private Button CreateFlatButton(string text, int width, int height)
