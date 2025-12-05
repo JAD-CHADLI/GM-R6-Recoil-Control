@@ -39,7 +39,7 @@ namespace MouseSliderApp
 
         // Global buttons on profiles page
         private Button _buttonStart = null!;
-        private Button _buttonResetAll = null!;
+        private Button _buttonResetAll = null!;   // now only used in Tutorial header
         private Button _buttonAbout = null!;
         private Button _buttonTutorial = null!;
 
@@ -420,20 +420,6 @@ namespace MouseSliderApp
                 Location = new Point(logoBox.Right + 12, 14)
             };
 
-            _buttonResetAll = new Button
-            {
-                Text = "RESET ALL",
-                Width = 120,
-                Height = 30,
-                FlatStyle = FlatStyle.Flat,
-                BackColor = AccentDanger,
-                ForeColor = Color.White,
-                Anchor = AnchorStyles.Top
-            };
-            _buttonResetAll.FlatAppearance.BorderSize = 0;
-            _buttonResetAll.Click += ButtonResetAll_Click;
-            ApplyRoundedCorners(_buttonResetAll, 6);
-
             _buttonStart = new Button
             {
                 Text = "Start",
@@ -456,18 +442,16 @@ namespace MouseSliderApp
 
             header.Controls.Add(logoBox);
             header.Controls.Add(titleLabel);
-            header.Controls.Add(_buttonResetAll);
             header.Controls.Add(_buttonStart);
             header.Controls.Add(_buttonAbout);
             header.Controls.Add(_buttonTutorial);
 
             // Tooltips for main header
             _toolTip.SetToolTip(_buttonStart, "Toggle mouse movement for the selected profile.");
-            _toolTip.SetToolTip(_buttonResetAll, "Reset speeds and keybinds for all profiles.");
             _toolTip.SetToolTip(_buttonAbout, "Show information about the application.");
             _toolTip.SetToolTip(_buttonTutorial, "Open the quick tutorial.");
 
-            // === UPDATED LAYOUT: Start + Reset centered, About + Tutorial on right ===
+            // Layout: Start centered, About + Tutorial on right (no Reset All here)
             header.Resize += (s, e) =>
             {
                 int top = 15;
@@ -492,16 +476,14 @@ namespace MouseSliderApp
                         top);
                 }
 
-                // Center group: Start + RESET ALL
-                if (_buttonStart != null && _buttonResetAll != null)
+                // Center: Start button alone
+                if (_buttonStart != null)
                 {
-                    int groupWidth = _buttonStart.Width + gap + _buttonResetAll.Width;
                     int centerX = header.Width / 2;
-                    int groupLeft = centerX - groupWidth / 2;
-                    if (groupLeft < 0) groupLeft = 0;
+                    int startLeft = centerX - _buttonStart.Width / 2;
+                    if (startLeft < 0) startLeft = 0;
 
-                    _buttonStart.Location = new Point(groupLeft, top);
-                    _buttonResetAll.Location = new Point(_buttonStart.Right + gap, top);
+                    _buttonStart.Location = new Point(startLeft, top);
                 }
             };
 
@@ -1363,6 +1345,26 @@ namespace MouseSliderApp
         {
             var header = BuildSecondaryPageHeader("Tutorial", (s, e) => ShowProfilesPage());
 
+            // Reset All button ONLY in Tutorial header now
+            _buttonResetAll = CreateFlatButton("RESET ALL", 120, 30);
+            _buttonResetAll.BackColor = AccentDanger;
+            _buttonResetAll.ForeColor = Color.White;
+            _buttonResetAll.FlatAppearance.BorderSize = 0;
+            _buttonResetAll.Click += ButtonResetAll_Click;   // reuse same logic
+            _toolTip.SetToolTip(_buttonResetAll, "Reset speeds and keybinds for all profiles.");
+
+            header.Controls.Add(_buttonResetAll);
+
+            // Position it on the right side of the Tutorial header
+            header.Resize += (s, e) =>
+            {
+                int marginRight = 20;
+                int top = 15;
+                _buttonResetAll.Location = new Point(
+                    header.Width - _buttonResetAll.Width - marginRight,
+                    top);
+            };
+
             var content = new Panel
             {
                 Dock = DockStyle.Fill,
@@ -1426,6 +1428,7 @@ namespace MouseSliderApp
             _pageTutorial.Controls.Add(content);
             _pageTutorial.Controls.Add(header);
         }
+
 
         private Button CreateFlatButton(string text, int width, int height)
         {
@@ -1586,7 +1589,7 @@ namespace MouseSliderApp
         private void CreateProfiles()
         {
             // Category A – Attackers
-            _profiles.Add(new Profile("A", 37, "Striker", "A_Striker.png"));   // <<< now first
+            _profiles.Add(new Profile("A", 37, "Striker", "A_Striker.png"));   // first attacker
 
             _profiles.Add(new Profile("A", 1, "Sledge", "A_Sledge.png"));
             _profiles.Add(new Profile("A", 2, "Thatcher", "A_Thatcher.png"));
@@ -1623,11 +1626,10 @@ namespace MouseSliderApp
             _profiles.Add(new Profile("A", 33, "Grim", "A_Grim.png"));
             _profiles.Add(new Profile("A", 34, "Brava", "A_Brava.png"));
             _profiles.Add(new Profile("A", 35, "Ram", "A_Ram.png"));
-            _profiles.Add(new Profile("A", 38, "Rauora", "A_Rauora.png"));    // Striker used to be before this
-
+            _profiles.Add(new Profile("A", 38, "Rauora", "A_Rauora.png"));
 
             // Category B – Defenders
-            _profiles.Add(new Profile("B", 36, "Sentry", "B_Sentry.png"));     // <<< now first
+            _profiles.Add(new Profile("B", 36, "Sentry", "B_Sentry.png"));     // first defender
 
             _profiles.Add(new Profile("B", 1, "Smoke", "B_Smoke.png"));
             _profiles.Add(new Profile("B", 2, "Mute", "B_Mute.png"));
@@ -1664,8 +1666,7 @@ namespace MouseSliderApp
             _profiles.Add(new Profile("B", 33, "Fenrir", "B_Fenrir.png"));
             _profiles.Add(new Profile("B", 34, "Tubarão", "B_Tubarao.png"));
             _profiles.Add(new Profile("B", 35, "Skopós", "B_Skopos.png"));
-            _profiles.Add(new Profile("B", 37, "Denari", "B_Denari.png"));    // Sentry used to be before this
-
+            _profiles.Add(new Profile("B", 37, "Denari", "B_Denari.png"));
         }
 
         // ==========================================================
