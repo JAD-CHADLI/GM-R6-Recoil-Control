@@ -1586,6 +1586,8 @@ namespace MouseSliderApp
         private void CreateProfiles()
         {
             // Category A – Attackers
+            _profiles.Add(new Profile("A", 37, "Striker", "A_Striker.png"));   // <<< now first
+
             _profiles.Add(new Profile("A", 1, "Sledge", "A_Sledge.png"));
             _profiles.Add(new Profile("A", 2, "Thatcher", "A_Thatcher.png"));
             _profiles.Add(new Profile("A", 3, "Ash", "A_Ash.png"));
@@ -1621,11 +1623,12 @@ namespace MouseSliderApp
             _profiles.Add(new Profile("A", 33, "Grim", "A_Grim.png"));
             _profiles.Add(new Profile("A", 34, "Brava", "A_Brava.png"));
             _profiles.Add(new Profile("A", 35, "Ram", "A_Ram.png"));
-            _profiles.Add(new Profile("A", 36, "Deimos", "A_Deimos.png"));
-            _profiles.Add(new Profile("A", 37, "Striker", "A_Striker.png"));
-            _profiles.Add(new Profile("A", 38, "Rauora", "A_Rauora.png"));
+            _profiles.Add(new Profile("A", 38, "Rauora", "A_Rauora.png"));    // Striker used to be before this
+
 
             // Category B – Defenders
+            _profiles.Add(new Profile("B", 36, "Sentry", "B_Sentry.png"));     // <<< now first
+
             _profiles.Add(new Profile("B", 1, "Smoke", "B_Smoke.png"));
             _profiles.Add(new Profile("B", 2, "Mute", "B_Mute.png"));
             _profiles.Add(new Profile("B", 3, "Castle", "B_Castle.png"));
@@ -1661,8 +1664,8 @@ namespace MouseSliderApp
             _profiles.Add(new Profile("B", 33, "Fenrir", "B_Fenrir.png"));
             _profiles.Add(new Profile("B", 34, "Tubarão", "B_Tubarao.png"));
             _profiles.Add(new Profile("B", 35, "Skopós", "B_Skopos.png"));
-            _profiles.Add(new Profile("B", 36, "Sentry", "B_Sentry.png"));
-            _profiles.Add(new Profile("B", 37, "Denari", "B_Denari.png"));
+            _profiles.Add(new Profile("B", 37, "Denari", "B_Denari.png"));    // Sentry used to be before this
+
         }
 
         // ==========================================================
