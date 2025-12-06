@@ -88,6 +88,123 @@
     <None Remove="Images\B_Vigil.png" />
     <None Remove="Images\B_Wamai.png" />
     <None Remove="Images\B_Warden.png" />
+    <None Remove="Images\W_1911TACOPS.png" />
+    <None Remove="Images\W_416CCARBINE.png" />
+    <None Remove="Images\W_417.png" />
+    <None Remove="Images\W_44MAGSEMIAUTO.png" />
+    <None Remove="Images\W_44VENDETTA.png" />
+    <None Remove="Images\W_552COMMANDO.png" />
+    <None Remove="Images\W_556XI.png" />
+    <None Remove="Images\W_57USG.png" />
+    <None Remove="Images\W_6P41.png" />
+    <None Remove="Images\W_9MMC1.png" />
+    <None Remove="Images\W_9X19SVN.png" />
+    <None Remove="Images\W_9X19VSN.png" />
+    <None Remove="Images\W_ACS12.png" />
+    <None Remove="Images\W_AK12.png" />
+    <None Remove="Images\W_AK74M.png" />
+    <None Remove="Images\W_ALDA556.png" />
+    <None Remove="Images\W_AR1550.png" />
+    <None Remove="Images\W_AR33.png" />
+    <None Remove="Images\W_ARX200.png" />
+    <None Remove="Images\W_AUGA2.png" />
+    <None Remove="Images\W_AUGA3.png" />
+    <None Remove="Images\W_BAILIFF410.png" />
+    <None Remove="Images\W_BALLISTICSHIELD.png" />
+    <None Remove="Images\W_BEARING9.png" />
+    <None Remove="Images\W_BOSG122.png" />
+    <None Remove="Images\W_C75AUTO.png" />
+    <None Remove="Images\W_C7E.png" />
+    <None Remove="Images\W_C8SFW.png" />
+    <None Remove="Images\W_CAMRS.png" />
+    <None Remove="Images\W_CCESHIELD.png" />
+    <None Remove="Images\W_COMMANDO9.png" />
+    <None Remove="Images\W_CSRX300.png" />
+    <None Remove="Images\W_D50.png" />
+    <None Remove="Images\W_DP27LMG.png" />
+    <None Remove="Images\W_F2.png" />
+    <None Remove="Images\W_F90.png" />
+    <None Remove="Images\W_FMG9.png" />
+    <None Remove="Images\W_FO12.png" />
+    <None Remove="Images\W_G36C.png" />
+    <None Remove="Images\W_G52TACTICALSHIELD.png" />
+    <None Remove="Images\W_G8A1.png" />
+    <None Remove="Images\W_GLAIVE12.png" />
+    <None Remove="Images\W_GONNE6.png" />
+    <None Remove="Images\W_GSH18.png" />
+    <None Remove="Images\W_ITA12L.png" />
+    <None Remove="Images\W_ITA12S.png" />
+    <None Remove="Images\W_K1A.png" />
+    <None Remove="Images\W_KERATOS357.png" />
+    <None Remove="Images\W_L85A2.png" />
+    <None Remove="Images\W_LEROCEXTENDABLESHIELD.png" />
+    <None Remove="Images\W_LFP586.png" />
+    <None Remove="Images\W_LMGE.png" />
+    <None Remove="Images\W_LUISON.png" />
+    <None Remove="Images\W_M1014.png" />
+    <None Remove="Images\W_M12.png" />
+    <None Remove="Images\W_M249.png" />
+    <None Remove="Images\W_M249SAW.png" />
+    <None Remove="Images\W_M4.png" />
+    <None Remove="Images\W_M45MEUSOC.png" />
+    <None Remove="Images\W_M590A1.png" />
+    <None Remove="Images\W_M762.png" />
+    <None Remove="Images\W_M870.png" />
+    <None Remove="Images\W_MK14EBR.png" />
+    <None Remove="Images\W_MK17CQB.png" />
+    <None Remove="Images\W_MK19MM.png" />
+    <None Remove="Images\W_MP5.png" />
+    <None Remove="Images\W_MP5K.png" />
+    <None Remove="Images\W_MP5SD.png" />
+    <None Remove="Images\W_MP7.png" />
+    <None Remove="Images\W_MPX.png" />
+    <None Remove="Images\W_MX4STORM.png" />
+    <None Remove="Images\W_OTS03.png" />
+    <None Remove="Images\W_P10C.png" />
+    <None Remove="Images\W_P10RONI.png" />
+    <None Remove="Images\W_P12.png" />
+    <None Remove="Images\W_P226MK25.png" />
+    <None Remove="Images\W_P229.png" />
+    <None Remove="Images\W_P9.png" />
+    <None Remove="Images\W_P90.png" />
+    <None Remove="Images\W_PARA308.png" />
+    <None Remove="Images\W_PCX33.png" />
+    <None Remove="Images\W_PDW9.png" />
+    <None Remove="Images\W_PMM.png" />
+    <None Remove="Images\W_PMR90A2.png" />
+    <None Remove="Images\W_POF9.png" />
+    <None Remove="Images\W_PRB92.png" />
+    <None Remove="Images\W_Q929.png" />
+    <None Remove="Images\W_R4C.png" />
+    <None Remove="Images\W_REAPERMK2.png" />
+    <None Remove="Images\W_RG15.png" />
+    <None Remove="Images\W_SASG12.png" />
+    <None Remove="Images\W_SC3000K.png" />
+    <None Remove="Images\W_SCORPIONEVO3A1.png" />
+    <None Remove="Images\W_SDP9MM.png" />
+    <None Remove="Images\W_SGCQB.png" />
+    <None Remove="Images\W_SIX12.png" />
+    <None Remove="Images\W_SIX12SD.png" />
+    <None Remove="Images\W_SMG11.png" />
+    <None Remove="Images\W_SMG12.png" />
+    <None Remove="Images\W_SPAS12.png" />
+    <None Remove="Images\W_SPAS15.png" />
+    <None Remove="Images\W_SPEAR308.png" />
+    <None Remove="Images\W_SPSMG9.png" />
+    <None Remove="Images\W_SR25.png" />
+    <None Remove="Images\W_SUPER90.png" />
+    <None Remove="Images\W_SUPERNOVA.png" />
+    <None Remove="Images\W_SUPERSHORTY.png" />
+    <None Remove="Images\W_T5SMG.pn.png" />
+    <None Remove="Images\W_T5SMG.png" />
+    <None Remove="Images\W_T95LSW.png" />
+    <None Remove="Images\W_TCSG12.png" />
+    <None Remove="Images\W_TYPE89.png" />
+    <None Remove="Images\W_UMP45.png" />
+    <None Remove="Images\W_USP40.png" />
+    <None Remove="Images\W_UZK50GI.png" />
+    <None Remove="Images\W_V308.png" />
+    <None Remove="Images\W_VECTOR45ACP.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -326,6 +443,357 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Images\B_Warden.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_1911TACOPS.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_416CCARBINE.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_417.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_44MAGSEMIAUTO.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_44VENDETTA.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_552COMMANDO.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_556XI.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_57USG.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_6P41.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_9MMC1.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_9X19SVN.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_9X19VSN.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_ACS12.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_AK12.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_AK74M.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_ALDA556.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_AR1550.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_AR33.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_ARX200.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_AUGA2.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_AUGA3.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_BAILIFF410.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_BALLISTICSHIELD.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_BEARING9.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_BOSG122.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_C75AUTO.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_C7E.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_C8SFW.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_CAMRS.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_CCESHIELD.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_COMMANDO9.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_CSRX300.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_D50.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_DP27LMG.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_F2.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_F90.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_FMG9.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_FO12.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_G36C.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_G52TACTICALSHIELD.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_G8A1.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_GLAIVE12.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_GONNE6.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_GSH18.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_ITA12L.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_ITA12S.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_K1A.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_KERATOS357.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_L85A2.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_LEROCEXTENDABLESHIELD.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_LFP586.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_LMGE.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_LUISON.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_M1014.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_M12.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_M249.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_M249SAW.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_M4.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_M45MEUSOC.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_M590A1.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_M762.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_M870.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_MK14EBR.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_MK17CQB.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_MK19MM.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_MP5.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_MP5K.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_MP5SD.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_MP7.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_MPX.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_MX4STORM.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_OTS03.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_P10C.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_P10RONI.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_P12.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_P226MK25.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_P229.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_P9.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_P90.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_PARA308.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_PCX33.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_PDW9.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_PMM.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_PMR90A2.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_POF9.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_PRB92.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_Q929.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_R4C.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_REAPERMK2.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_RG15.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_SASG12.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_SC3000K.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_SCORPIONEVO3A1.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_SDP9MM.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_SGCQB.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_SIX12.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_SIX12SD.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_SMG11.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_SMG12.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_SPAS12.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_SPAS15.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_SPEAR308.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_SPSMG9.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_SR25.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_SUPER90.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_SUPERNOVA.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_SUPERSHORTY.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_T5SMG.pn.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_T5SMG.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_T95LSW.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_TCSG12.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_TYPE89.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_UMP45.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_USP40.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_UZK50GI.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_V308.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\W_VECTOR45ACP.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

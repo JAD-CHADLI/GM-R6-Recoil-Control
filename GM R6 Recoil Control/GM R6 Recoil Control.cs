@@ -47,6 +47,17 @@ namespace MouseSliderApp
         private Panel _movementCard = null!;
         private Panel _setupCard = null!;
 
+        // ====== Weapon UI (Settings page) ======
+        private Panel _weaponCard = null!;
+        private Button _buttonPrimaryPrev = null!;
+        private Button _buttonPrimaryNext = null!;
+        private Button _buttonSecondaryPrev = null!;
+        private Button _buttonSecondaryNext = null!;
+        private Label _labelPrimaryWeaponName = null!;
+        private Label _labelSecondaryWeaponName = null!;
+        private PictureBox _picturePrimaryWeapon = null!;
+        private PictureBox _pictureSecondaryWeapon = null!;
+
         // ====== Category / Profile selection (Profiles page) ======
         private Label _labelCategory = null!; // (no longer used but kept for compatibility if needed)
         private Button _buttonCategoryA = null!;
@@ -139,6 +150,7 @@ namespace MouseSliderApp
             public string Name { get; }
             public string? ImageFileName { get; }
 
+            // Old per-setup values (kept for save compatibility / fallback)
             public double Horizontal1 { get; set; }
             public double Vertical1 { get; set; }
             public Keys Key1 { get; set; } = Keys.None;
@@ -147,16 +159,57 @@ namespace MouseSliderApp
             public double Vertical2 { get; set; }
             public Keys Key2 { get; set; } = Keys.None;
 
+            // New: weapon lists
+            public List<WeaponInfo> PrimaryWeapons { get; } = new();
+            public List<WeaponInfo> SecondaryWeapons { get; } = new();
+
+            public int SelectedPrimaryIndex { get; set; }
+            public int SelectedSecondaryIndex { get; set; }
+
+            public WeaponInfo? SelectedPrimaryWeapon =>
+                (SelectedPrimaryIndex >= 0 && SelectedPrimaryIndex < PrimaryWeapons.Count)
+                    ? PrimaryWeapons[SelectedPrimaryIndex]
+                    : null;
+
+            public WeaponInfo? SelectedSecondaryWeapon =>
+                (SelectedSecondaryIndex >= 0 && SelectedSecondaryIndex < SecondaryWeapons.Count)
+                    ? SecondaryWeapons[SelectedSecondaryIndex]
+                    : null;
+
             public Profile(string category, int index, string name, string? imageFileName)
             {
                 Category = category;
                 Index = index;
                 Name = name;
                 ImageFileName = imageFileName;
+
                 Horizontal1 = 0.0;
                 Vertical1 = 0.0;
                 Horizontal2 = 0.0;
                 Vertical2 = 0.0;
+
+                SelectedPrimaryIndex = 0;
+                SelectedSecondaryIndex = 0;
+            }
+
+            public override string ToString() => Name;
+        }
+
+        // New: weapon recoil model
+        private class WeaponInfo
+        {
+            public string Name { get; }
+            public string? ImageFileName { get; }
+
+            public double Horizontal { get; set; }
+            public double Vertical { get; set; }
+
+            public WeaponInfo(string name, string? imageFileName)
+            {
+                Name = name;
+                ImageFileName = imageFileName;
+                Horizontal = 0.0;
+                Vertical = 0.0;
             }
 
             public override string ToString() => Name;
@@ -224,7 +277,6 @@ namespace MouseSliderApp
         private const uint INPUT_MOUSE = 0;
         private const uint MOUSEEVENTF_MOVE = 0x0001;
 
-
         public Form1()
         {
             KeyPreview = true;
@@ -251,6 +303,7 @@ namespace MouseSliderApp
             SetDoubleBuffered(_profilesPanel);
 
             CreateProfiles();
+            InitializeWeapons();      // new
             LoadProfilesFromFile();
             ShowCategory("A");
             ShowProfilesPage();
@@ -886,7 +939,8 @@ namespace MouseSliderApp
 
             var settingsLayout = new Panel
             {
-                BackColor = Color.Transparent
+                BackColor = Color.Transparent,
+                Dock = DockStyle.Fill   // <-- important: let it fill the whole content area
             };
 
             // hero frame + big image
@@ -917,6 +971,182 @@ namespace MouseSliderApp
                 Font = new Font("Segoe UI", 8F, FontStyle.Regular)
             };
             operatorCaption.Location = new Point(operatorFrame.Left + 4, operatorFrame.Bottom + 6);
+
+            // ====== Weapons card (primary / secondary) – HORIZONTAL layout ======
+            _weaponCard = new Panel
+            {
+                BackColor = CardNormalColor,
+                Size = new Size(280, 240),
+                Padding = new Padding(10)
+            };
+            ApplyRoundedCorners(_weaponCard, 8);
+            _weaponCard.Location = new Point(operatorFrame.Left, operatorCaption.Bottom + 20);
+
+            var weaponTitle = new Label
+            {
+                AutoSize = true,
+                Text = "Weapons",
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold)
+            };
+
+            var weaponUnderline = new Panel
+            {
+                Height = 2,
+                BackColor = AccentPrimarySoft,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+
+            // captions
+            var primaryCaption = new Label
+            {
+                AutoSize = true,
+                Text = "Primary weapon"
+            };
+
+            var secondaryCaption = new Label
+            {
+                AutoSize = true,
+                Text = "Secondary weapon"
+            };
+
+            // primary controls
+            _buttonPrimaryPrev = CreateFlatButton("<", 28, 24);
+            _buttonPrimaryNext = CreateFlatButton(">", 28, 24);
+            _labelPrimaryWeaponName = new Label
+            {
+                AutoSize = false,
+                Text = "Primary weapon",
+                TextAlign = ContentAlignment.MiddleCenter,
+                ForeColor = Color.White
+            };
+
+            // secondary controls
+            _buttonSecondaryPrev = CreateFlatButton("<", 28, 24);
+            _buttonSecondaryNext = CreateFlatButton(">", 28, 24);
+            _labelSecondaryWeaponName = new Label
+            {
+                AutoSize = false,
+                Text = "Secondary weapon",
+                TextAlign = ContentAlignment.MiddleCenter,
+                ForeColor = Color.White
+            };
+
+            _picturePrimaryWeapon = new PictureBox
+            {
+                SizeMode = PictureBoxSizeMode.Zoom,
+                BackColor = Color.FromArgb(15, 23, 42)
+            };
+
+            _pictureSecondaryWeapon = new PictureBox
+            {
+                SizeMode = PictureBoxSizeMode.Zoom,
+                BackColor = Color.FromArgb(15, 23, 42)
+            };
+
+            _weaponCard.Controls.Add(weaponTitle);
+            _weaponCard.Controls.Add(weaponUnderline);
+            _weaponCard.Controls.Add(primaryCaption);
+            _weaponCard.Controls.Add(secondaryCaption);
+            _weaponCard.Controls.Add(_buttonPrimaryPrev);
+            _weaponCard.Controls.Add(_buttonPrimaryNext);
+            _weaponCard.Controls.Add(_labelPrimaryWeaponName);
+            _weaponCard.Controls.Add(_buttonSecondaryPrev);
+            _weaponCard.Controls.Add(_buttonSecondaryNext);
+            _weaponCard.Controls.Add(_labelSecondaryWeaponName);
+            _weaponCard.Controls.Add(_picturePrimaryWeapon);
+            _weaponCard.Controls.Add(_pictureSecondaryWeapon);
+
+            _buttonPrimaryPrev.Click += (s, e) => ChangeWeaponSelection(true, -1);
+            _buttonPrimaryNext.Click += (s, e) => ChangeWeaponSelection(true, +1);
+            _buttonSecondaryPrev.Click += (s, e) => ChangeWeaponSelection(false, -1);
+            _buttonSecondaryNext.Click += (s, e) => ChangeWeaponSelection(false, +1);
+
+            // local layout function for the weapons card
+            void LayoutWeaponCard()
+            {
+                int padding = 10;
+                int colGap = 16;
+
+                int innerWidth = _weaponCard.ClientSize.Width - padding * 2;
+                if (innerWidth < 100) innerWidth = 100;
+
+                bool stacked =
+                    innerWidth < 260; // fallback for super-narrow windows
+
+                int colWidth;
+                int xLeft = padding;
+                int xRight;
+
+                if (stacked)
+                {
+                    colWidth = innerWidth;
+                    xRight = padding;
+                }
+                else
+                {
+                    colWidth = (innerWidth - colGap) / 2;
+                    if (colWidth < 80) colWidth = 80;
+                    xRight = padding + colWidth + colGap;
+                }
+
+                int top = 5;
+
+                weaponTitle.Location = new Point(padding, top);
+                weaponUnderline.Location = new Point(padding, weaponTitle.Bottom + 3);
+                weaponUnderline.Width = innerWidth;
+
+                int captionTop = weaponUnderline.Bottom + 7;
+                primaryCaption.Location = new Point(xLeft, captionTop);
+                secondaryCaption.Location = stacked
+                    ? new Point(xLeft, primaryCaption.Bottom + 25)
+                    : new Point(xRight, captionTop);
+
+                int rowYPrimary = primaryCaption.Bottom + 5;
+                _buttonPrimaryPrev.Location = new Point(xLeft, rowYPrimary);
+                _buttonPrimaryNext.Location = new Point(xLeft + colWidth - _buttonPrimaryNext.Width, rowYPrimary);
+
+                _labelPrimaryWeaponName.Location = new Point(_buttonPrimaryPrev.Right + 4, rowYPrimary + 3);
+                _labelPrimaryWeaponName.Width =
+                    Math.Max(40, _buttonPrimaryNext.Left - _buttonPrimaryPrev.Right - 8);
+                _labelPrimaryWeaponName.Height = _buttonPrimaryNext.Height - 4;
+
+                int rowYSecondary = secondaryCaption.Bottom + 5;
+                _buttonSecondaryPrev.Location = new Point(stacked ? xLeft : xRight, rowYSecondary);
+                _buttonSecondaryNext.Location = new Point(
+                    (stacked ? xLeft : xRight) + colWidth - _buttonSecondaryNext.Width,
+                    rowYSecondary);
+
+                _labelSecondaryWeaponName.Location = new Point(_buttonSecondaryPrev.Right + 4, rowYSecondary + 3);
+                _labelSecondaryWeaponName.Width =
+                    Math.Max(40, _buttonSecondaryNext.Left - _buttonSecondaryPrev.Right - 8);
+                _labelSecondaryWeaponName.Height = _buttonSecondaryNext.Height - 4;
+
+                int imageTop =
+                    Math.Max(_buttonPrimaryPrev.Bottom, _buttonSecondaryPrev.Bottom) + 8;
+                int availableHeight = _weaponCard.ClientSize.Height - imageTop - padding;
+                if (availableHeight < 40) availableHeight = 40;
+
+                if (stacked)
+                {
+                    int half = (availableHeight - 6) / 2;
+                    if (half < 40) half = 40;
+
+                    _picturePrimaryWeapon.Bounds = new Rectangle(xLeft, imageTop, colWidth, half);
+                    _pictureSecondaryWeapon.Bounds =
+                        new Rectangle(xLeft, imageTop + half + 6, colWidth, half);
+                }
+                else
+                {
+                    _picturePrimaryWeapon.Bounds =
+                        new Rectangle(xLeft, imageTop, colWidth, availableHeight);
+                    _pictureSecondaryWeapon.Bounds =
+                        new Rectangle(xRight, imageTop, colWidth, availableHeight);
+                }
+            }
+
+            _weaponCard.Resize += (s, e) => LayoutWeaponCard();
+            LayoutWeaponCard();
+            // ===== end weapons card =====
 
             // movement card
             _movementCard = new Panel
@@ -1046,7 +1276,7 @@ namespace MouseSliderApp
             _labelActiveSetup = new Label
             {
                 AutoSize = true,
-                Text = "Active setup: 1",
+                Text = "Active setup: 1 (Primary)",
                 Location = new Point(10, 30),
                 ForeColor = TextMuted
             };
@@ -1054,7 +1284,7 @@ namespace MouseSliderApp
             _labelSetup1 = new Label
             {
                 AutoSize = true,
-                Text = "Setup 1 key:",
+                Text = "Setup 1 key (Primary):",
                 Location = new Point(10, 60)
             };
 
@@ -1062,24 +1292,23 @@ namespace MouseSliderApp
             {
                 ReadOnly = true,
                 Width = 80,
-                Location = new Point(90, 57),
+                Location = new Point(170, 57),   // was 140
                 Text = "None"
             };
 
             _buttonSetKey1 = CreateFlatButton("Set Key 1", 90, 28);
-            _buttonSetKey1.Location = new Point(180, 55);
-            _buttonSetKey1.Click += (s, e) => StartCapturingKey(1);
-            _toolTip.SetToolTip(_buttonSetKey1, "Click, then press a key to bind Setup 1.");
+            _buttonSetKey1.Location = new Point(260, 55);  // was 230
 
             _buttonSaveSetup1 = CreateFlatButton("Save 1", 80, 28);
-            _buttonSaveSetup1.Location = new Point(280, 55);
+            _buttonSaveSetup1.Location = new Point(360, 55); // was 330
+
             _buttonSaveSetup1.Click += ButtonSaveSetup1_Click;
             _toolTip.SetToolTip(_buttonSaveSetup1, "Save current speeds as Setup 1.");
 
             _labelSetup2 = new Label
             {
                 AutoSize = true,
-                Text = "Setup 2 key:",
+                Text = "Setup 2 key (Secondary):",
                 Location = new Point(10, 100)
             };
 
@@ -1087,19 +1316,33 @@ namespace MouseSliderApp
             {
                 ReadOnly = true,
                 Width = 80,
-                Location = new Point(90, 97),
+                Location = new Point(170, 97),   // was 140
                 Text = "None"
             };
 
             _buttonSetKey2 = CreateFlatButton("Set Key 2", 90, 28);
-            _buttonSetKey2.Location = new Point(180, 95);
-            _buttonSetKey2.Click += (s, e) => StartCapturingKey(2);
-            _toolTip.SetToolTip(_buttonSetKey2, "Click, then press a key to bind Setup 2.");
+            _buttonSetKey2.Location = new Point(260, 95);  // was 230
 
             _buttonSaveSetup2 = CreateFlatButton("Save 2", 80, 28);
-            _buttonSaveSetup2.Location = new Point(280, 95);
+            _buttonSaveSetup2.Location = new Point(360, 95); // was 330
             _buttonSaveSetup2.Click += ButtonSaveSetup2_Click;
             _toolTip.SetToolTip(_buttonSaveSetup2, "Save current speeds as Setup 2.");
+
+            _labelSetup1Summary = new Label
+            {
+                AutoSize = true,
+                ForeColor = TextMuted,
+                Location = new Point(10, 140),
+                Text = "Primary: H = 0.000, V = 0.000"
+            };
+
+            _labelSetup2Summary = new Label
+            {
+                AutoSize = true,
+                ForeColor = TextMuted,
+                Location = new Point(10, 160),
+                Text = "Secondary: H = 0.000, V = 0.000"
+            };
 
             _setupCard.Controls.Add(setupTitle);
             _setupCard.Controls.Add(setupUnderline);
@@ -1112,39 +1355,18 @@ namespace MouseSliderApp
             _setupCard.Controls.Add(_textKey2);
             _setupCard.Controls.Add(_buttonSetKey2);
             _setupCard.Controls.Add(_buttonSaveSetup2);
-
-            // summary labels showing saved H/V for each setup
-            _labelSetup1Summary = new Label
-            {
-                AutoSize = true,
-                ForeColor = TextMuted,
-                Location = new Point(10, 140),
-                Text = "Setup 1: H = 0.000, V = 0.000"
-            };
-
-            _labelSetup2Summary = new Label
-            {
-                AutoSize = true,
-                ForeColor = TextMuted,
-                Location = new Point(10, 160),
-                Text = "Setup 2: H = 0.000, V = 0.000"
-            };
-
             _setupCard.Controls.Add(_labelSetup1Summary);
             _setupCard.Controls.Add(_labelSetup2Summary);
 
             settingsLayout.Controls.Add(operatorFrame);
             settingsLayout.Controls.Add(operatorCaption);
-            settingsLayout.Controls.Add(_movementCard);
-            settingsLayout.Controls.Add(_setupCard);
-
-            int layoutWidth = Math.Max(operatorFrame.Right, _movementCard.Right);
-            int layoutHeight = Math.Max(operatorFrame.Bottom + 30, _setupCard.Bottom);
-            settingsLayout.Size = new Size(layoutWidth, layoutHeight);
+            settingsLayout.Controls.Add(_weaponCard);      // Weapons card on the left
+            settingsLayout.Controls.Add(_movementCard);    // Movement card on the right
+            settingsLayout.Controls.Add(_setupCard);       // Setups card on the right
 
             content.Controls.Add(settingsLayout);
 
-            // WATERMARK logo bottom-right on settings page
+            // WATERMARK logo bottom-right on settings page (keep as before)
             _settingsLogoWatermark = new PictureBox
             {
                 Size = new Size(80, 80),
@@ -1162,25 +1384,87 @@ namespace MouseSliderApp
                     e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
                     using (var pen = new Pen(Color.FromArgb(55, 65, 81), 2))
                     {
-                        e.Graphics.DrawRectangle(pen, 4, 4, _settingsLogoWatermark.Width - 8, _settingsLogoWatermark.Height - 8);
+                        e.Graphics.DrawRectangle(pen, 4, 4,
+                            _settingsLogoWatermark.Width - 8,
+                            _settingsLogoWatermark.Height - 8);
                     }
                 };
             }
             _toolTip.SetToolTip(_settingsLogoWatermark, "App logo watermark.");
             content.Controls.Add(_settingsLogoWatermark);
 
-            // Center layout + position watermark on resize
-            content.Resize += (s, e) =>
+            // ---- NEW: responsive layout ----
+            void Relayout()
             {
-                CenterInnerPanel(settingsLayout, content);
-                PositionSettingsLogoWatermark(content);
-            };
-            CenterInnerPanel(settingsLayout, content);
+                int margin = 24;      // outer margin
+                int colGap = 32;      // gap between left and right columns
+
+                int cw = settingsLayout.ClientSize.Width;
+                int ch = settingsLayout.ClientSize.Height;
+                if (cw <= 0 || ch <= 0) return;
+
+                // left column width ~ 30% of window, with minimum
+                int leftWidth = Math.Max(260, (int)(cw * 0.32));
+                // right column is the rest
+                int rightWidth = cw - leftWidth - colGap - margin * 2;
+                if (rightWidth < 320) rightWidth = 320;
+
+                int topY = margin;
+
+                // ---- Operator frame (top-left) ----
+                int operatorHeight = Math.Max(260, (int)(ch * 0.45));
+                operatorFrame.Bounds = new Rectangle(
+                    margin,
+                    topY,
+                    leftWidth,
+                    operatorHeight);
+
+                // "Current operator" label directly under the image
+                operatorCaption.Location = new Point(
+                    operatorFrame.Left,
+                    operatorFrame.Bottom + 6);
+
+                // ---- Weapons card under the operator ----
+                int weaponsTop = operatorCaption.Bottom + 8;
+                int weaponsHeight = Math.Max(140, ch - weaponsTop - margin);
+                _weaponCard.Bounds = new Rectangle(
+                    margin,
+                    weaponsTop,
+                    leftWidth,
+                    weaponsHeight);
+
+                // ---- Right column: Movement + Setups ----
+                int rightX = operatorFrame.Right + colGap;
+                int movementHeight = Math.Max(160, (int)(ch * 0.30));
+
+                _movementCard.Bounds = new Rectangle(
+                    rightX,
+                    topY,
+                    rightWidth,
+                    movementHeight);
+
+                int setupsTop = _movementCard.Bottom + 16;
+                int setupsHeight = ch - setupsTop - margin;
+
+                _setupCard.Bounds = new Rectangle(
+                    rightX,
+                    setupsTop,
+                    rightWidth,
+                    Math.Max(170, setupsHeight));
+            }
+
+            // Layout once now and whenever the panel size changes
+            settingsLayout.Resize += (s, e) => Relayout();
+            Relayout();
+
+            // Only move the watermark on resize now
+            content.Resize += (s, e) => PositionSettingsLogoWatermark(content);
             PositionSettingsLogoWatermark(content);
 
             _pageSettings.Controls.Add(content);
             _pageSettings.Controls.Add(header);
 
+            // keep your existing slider sync
             SyncHorizontalFromSlider();
             SyncVerticalFromSlider();
         }
@@ -1341,7 +1625,6 @@ namespace MouseSliderApp
         }
 
         // ===== Tutorial page =====
-        // ===== Tutorial page =====
         private void BuildTutorialPage()
         {
             var header = BuildSecondaryPageHeader("Tutorial", (s, e) => ShowProfilesPage());
@@ -1381,7 +1664,7 @@ namespace MouseSliderApp
                     "6. Back on the main page, press \"Start\" to arm the tool.\n" +
                     "   Hold RIGHT mouse button, then press LEFT mouse button to start the movement.\n" +
                     "7. Press your setup keys in-game to quickly switch between Setup 1 and Setup 2 for the selected profile.\n" +
-                    "8. Use \"Reset profile\" to clear settings for the current operator, or \"RESET ALL\" to clear all profiles."
+                    "8. Use \"Reset profile\" to clear settings for the current operator, or \"RESET ALL\" on this page to clear all profiles."
             };
 
             layout.Controls.Add(tutorialTitle);
@@ -1403,7 +1686,7 @@ namespace MouseSliderApp
 
             content.Controls.Add(layout);
 
-            // ==== RESET ALL button bottom-right INSIDE the tutorial page ====
+            // RESET ALL button bottom-right INSIDE the tutorial page
             _buttonResetAll = CreateFlatButton("RESET ALL", 120, 30);
             _buttonResetAll.BackColor = AccentDanger;
             _buttonResetAll.ForeColor = Color.White;
@@ -1432,8 +1715,6 @@ namespace MouseSliderApp
             _pageTutorial.Controls.Add(content);
             _pageTutorial.Controls.Add(header);
         }
-
-
 
         private Button CreateFlatButton(string text, int width, int height)
         {
@@ -1591,13 +1872,10 @@ namespace MouseSliderApp
         // ==========================================================
         // Create profiles (static names & images)
         // ==========================================================
-        // ==========================================================
-        // Create profiles (static names & images)
-        // ==========================================================
         private void CreateProfiles()
         {
             // Category A – Attackers
-            _profiles.Add(new Profile("A", 37, "Striker", "A_Striker.png"));   // <<< first
+            _profiles.Add(new Profile("A", 37, "Striker", "A_Striker.png"));   // first
 
             _profiles.Add(new Profile("A", 1, "Sledge", "A_Sledge.png"));
             _profiles.Add(new Profile("A", 2, "Thatcher", "A_Thatcher.png"));
@@ -1634,6 +1912,7 @@ namespace MouseSliderApp
             _profiles.Add(new Profile("A", 33, "Grim", "A_Grim.png"));
             _profiles.Add(new Profile("A", 34, "Brava", "A_Brava.png"));
             _profiles.Add(new Profile("A", 35, "Ram", "A_Ram.png"));
+            _profiles.Add(new Profile("A", 39, "Deimos", "A_Deimos.png"));
             _profiles.Add(new Profile("A", 38, "Rauora", "A_Rauora.png"));
 
             // Category B – Defenders
@@ -1670,7 +1949,7 @@ namespace MouseSliderApp
             _profiles.Add(new Profile("B", 29, "Thunderbird", "B_Thunderbird.png"));
             _profiles.Add(new Profile("B", 30, "Aruni", "B_Aruni.png"));
 
-            // >>> NEW: Thorn before Azami <<<
+            // Thorn before Azami
             _profiles.Add(new Profile("B", 38, "Thorn", "B_Thorn.png"));
 
             _profiles.Add(new Profile("B", 31, "Azami", "B_Azami.png"));
@@ -1679,6 +1958,987 @@ namespace MouseSliderApp
             _profiles.Add(new Profile("B", 34, "Tubarão", "B_Tubarao.png"));
             _profiles.Add(new Profile("B", 35, "Skopós", "B_Skopos.png"));
             _profiles.Add(new Profile("B", 37, "Denari", "B_Denari.png"));
+        }
+
+        // ==========================================================
+        // Weapons per operator
+        // ==========================================================
+        private void InitializeWeapons()
+        {
+            // ATTACKERS
+            var striker = _profiles.Find(p => p.Name == "Striker");
+            if (striker != null)
+            {
+                striker.PrimaryWeapons.Clear();
+                striker.SecondaryWeapons.Clear();
+                striker.PrimaryWeapons.Add(new WeaponInfo("M4", "W_M4.png"));
+                striker.PrimaryWeapons.Add(new WeaponInfo("M249", "W_M249.png"));
+                striker.PrimaryWeapons.Add(new WeaponInfo("SR-25", "W_SR25.png"));
+                striker.SecondaryWeapons.Add(new WeaponInfo("5.7 USG", "W_57USG.png"));
+                striker.SecondaryWeapons.Add(new WeaponInfo("ITA12S", "W_ITA12S.png"));
+                striker.SelectedPrimaryIndex = 0;
+                striker.SelectedSecondaryIndex = 0;
+            }
+
+            var sledge = _profiles.Find(p => p.Name == "Sledge");
+            if (sledge != null)
+            {
+                sledge.PrimaryWeapons.Clear();
+                sledge.SecondaryWeapons.Clear();
+                sledge.PrimaryWeapons.Add(new WeaponInfo("L85A2", "W_L85A2.png"));
+                sledge.PrimaryWeapons.Add(new WeaponInfo("M590A1", "W_M590A1.png"));
+                sledge.SecondaryWeapons.Add(new WeaponInfo("P226 Mk 25", "W_P226MK25.png"));
+                sledge.SecondaryWeapons.Add(new WeaponInfo("Reaper MK2", "W_REAPERMK2.png"));
+                sledge.SelectedPrimaryIndex = 0;
+                sledge.SelectedSecondaryIndex = 0;
+            }
+
+            var thatcher = _profiles.Find(p => p.Name == "Thatcher");
+            if (thatcher != null)
+            {
+                thatcher.PrimaryWeapons.Clear();
+                thatcher.SecondaryWeapons.Clear();
+                thatcher.PrimaryWeapons.Add(new WeaponInfo("AR33", "W_AR33.png"));
+                thatcher.PrimaryWeapons.Add(new WeaponInfo("L85A2", "W_L85A2.png"));
+                thatcher.PrimaryWeapons.Add(new WeaponInfo("M590A1", "W_M590A1.png"));
+                thatcher.SecondaryWeapons.Add(new WeaponInfo("P226 Mk 25", "W_P226MK25.png"));
+                thatcher.PrimaryWeapons.Add(new WeaponInfo("PMR90A2", "W_PMR90A2.png"));
+                thatcher.SecondaryWeapons.Add(new WeaponInfo("SMG-11", "W_SMG11.png"));
+                thatcher.SelectedPrimaryIndex = 0;
+                thatcher.SelectedSecondaryIndex = 0;
+            }
+
+            var ash = _profiles.Find(p => p.Name == "Ash");
+            if (ash != null)
+            {
+                ash.PrimaryWeapons.Clear();
+                ash.SecondaryWeapons.Clear();
+                ash.PrimaryWeapons.Add(new WeaponInfo("R4-C", "W_R4C.png"));
+                ash.PrimaryWeapons.Add(new WeaponInfo("G36C", "W_G36C.png"));
+                ash.SecondaryWeapons.Add(new WeaponInfo("5.7 USG", "W_57USG.png"));
+                ash.SecondaryWeapons.Add(new WeaponInfo("M45 MEUSOC", "W_M45MEUSOC.png"));
+                ash.SelectedPrimaryIndex = 0;
+                ash.SelectedSecondaryIndex = 0;
+            }
+
+            var thermite = _profiles.Find(p => p.Name == "Thermite");
+            if (thermite != null)
+            {
+                thermite.PrimaryWeapons.Clear();
+                thermite.SecondaryWeapons.Clear();
+                thermite.PrimaryWeapons.Add(new WeaponInfo("556xi", "W_556XI.png"));
+                thermite.PrimaryWeapons.Add(new WeaponInfo("M1014", "W_M1014.png"));
+                thermite.SecondaryWeapons.Add(new WeaponInfo("5.7 USG", "W_57USG.png"));
+                thermite.SecondaryWeapons.Add(new WeaponInfo("M45 MEUSOC", "W_M45MEUSOC.png"));
+                thermite.SelectedPrimaryIndex = 0;
+                thermite.SelectedSecondaryIndex = 0;
+            }
+
+            var twitch = _profiles.Find(p => p.Name == "Twitch");
+            if (twitch != null)
+            {
+                twitch.PrimaryWeapons.Clear();
+                twitch.SecondaryWeapons.Clear();
+                twitch.PrimaryWeapons.Add(new WeaponInfo("F2", "W_F2.png"));
+                twitch.PrimaryWeapons.Add(new WeaponInfo("417", "W_417.png"));
+                twitch.PrimaryWeapons.Add(new WeaponInfo("SG-CQB", "W_SGCQB.png"));
+                twitch.SecondaryWeapons.Add(new WeaponInfo("P9", "W_P9.png"));
+                twitch.SecondaryWeapons.Add(new WeaponInfo("LFP586", "W_LFP586.png"));
+                twitch.SelectedPrimaryIndex = 0;
+                twitch.SelectedSecondaryIndex = 0;
+            }
+
+            var montagne = _profiles.Find(p => p.Name == "Montagne");
+            if (montagne != null)
+            {
+                montagne.PrimaryWeapons.Clear();
+                montagne.SecondaryWeapons.Clear();
+                montagne.PrimaryWeapons.Add(new WeaponInfo("Le Roc Extendable Shield", "W_LEROCEXTENDABLESHIELD.png"));
+                montagne.SecondaryWeapons.Add(new WeaponInfo("P9", "W_P9.png"));
+                montagne.SecondaryWeapons.Add(new WeaponInfo("LFP586", "W_LFP586.png"));
+                montagne.SelectedPrimaryIndex = 0;
+                montagne.SelectedSecondaryIndex = 0;
+            }
+
+            var glaz = _profiles.Find(p => p.Name == "Glaz");
+            if (glaz != null)
+            {
+                glaz.PrimaryWeapons.Clear();
+                glaz.SecondaryWeapons.Clear();
+                glaz.PrimaryWeapons.Add(new WeaponInfo("OTs-03", "W_OTS03.png"));
+                glaz.SecondaryWeapons.Add(new WeaponInfo("PMM", "W_PMM.png"));
+                glaz.SecondaryWeapons.Add(new WeaponInfo("GONNE-6", "W_GONNE6.png"));
+                glaz.SecondaryWeapons.Add(new WeaponInfo("Bearing 9", "W_BEARING9.png"));
+                glaz.SelectedPrimaryIndex = 0;
+                glaz.SelectedSecondaryIndex = 0;
+            }
+
+            var fuze = _profiles.Find(p => p.Name == "Fuze");
+            if (fuze != null)
+            {
+                fuze.PrimaryWeapons.Clear();
+                fuze.SecondaryWeapons.Clear();
+                fuze.PrimaryWeapons.Add(new WeaponInfo("AK-12", "W_AK12.png"));
+                fuze.PrimaryWeapons.Add(new WeaponInfo("6P41", "W_6P41.png"));
+                fuze.PrimaryWeapons.Add(new WeaponInfo("Ballistic Shield", "W_BALLISTICSHIELD.png"));
+                fuze.SecondaryWeapons.Add(new WeaponInfo("PMM", "W_PMM.png"));
+                fuze.SecondaryWeapons.Add(new WeaponInfo("GSh-18", "W_GSH18.png"));
+                fuze.SelectedPrimaryIndex = 0;
+                fuze.SelectedSecondaryIndex = 0;
+            }
+
+            var blitz = _profiles.Find(p => p.Name == "Blitz");
+            if (blitz != null)
+            {
+                blitz.PrimaryWeapons.Clear();
+                blitz.SecondaryWeapons.Clear();
+                blitz.PrimaryWeapons.Add(new WeaponInfo("G52 Tactical Shield", "W_G52TACTICALSHIELD.png"));
+                blitz.SecondaryWeapons.Add(new WeaponInfo("P12", "W_P12.png"));
+                blitz.SelectedPrimaryIndex = 0;
+                blitz.SelectedSecondaryIndex = 0;
+            }
+
+            var iq = _profiles.Find(p => p.Name == "IQ");
+            if (iq != null)
+            {
+                iq.PrimaryWeapons.Clear();
+                iq.SecondaryWeapons.Clear();
+                iq.PrimaryWeapons.Add(new WeaponInfo("AUG A2", "W_AUGA2.png"));
+                iq.PrimaryWeapons.Add(new WeaponInfo("552 Commando", "W_552COMMANDO.png"));
+                iq.PrimaryWeapons.Add(new WeaponInfo("G8A1", "W_G8A1.png"));
+                iq.SecondaryWeapons.Add(new WeaponInfo("P12", "W_P12.png"));
+                iq.SelectedPrimaryIndex = 0;
+                iq.SelectedSecondaryIndex = 0;
+            }
+
+            var buck = _profiles.Find(p => p.Name == "Buck");
+            if (buck != null)
+            {
+                buck.PrimaryWeapons.Clear();
+                buck.SecondaryWeapons.Clear();
+                buck.PrimaryWeapons.Add(new WeaponInfo("C8-SFW", "W_C8SFW.png"));
+                buck.PrimaryWeapons.Add(new WeaponInfo("CAMRS", "W_CAMRS.png"));
+                buck.SecondaryWeapons.Add(new WeaponInfo("Mk1 9mm", "W_MK19MM.png"));
+                buck.SelectedPrimaryIndex = 0;
+                buck.SelectedSecondaryIndex = 0;
+            }
+
+            var blackbeard = _profiles.Find(p => p.Name == "Blackbeard");
+            if (blackbeard != null)
+            {
+                blackbeard.PrimaryWeapons.Clear();
+                blackbeard.SecondaryWeapons.Clear();
+                blackbeard.PrimaryWeapons.Add(new WeaponInfo("MK17 CQB", "W_MK17CQB.png"));
+                blackbeard.PrimaryWeapons.Add(new WeaponInfo("SR-25", "W_SR25.png"));
+                //blackbeard.SecondaryWeapons.Add(new WeaponInfo("D-50", "W_D50.png"));
+                blackbeard.SelectedPrimaryIndex = 0;
+                blackbeard.SelectedSecondaryIndex = 0;
+            }
+
+            var capitao = _profiles.Find(p => p.Name == "Capitão");
+            if (capitao != null)
+            {
+                capitao.PrimaryWeapons.Clear();
+                capitao.SecondaryWeapons.Clear();
+                capitao.PrimaryWeapons.Add(new WeaponInfo("PARA-308", "W_PARA308.png"));
+                capitao.PrimaryWeapons.Add(new WeaponInfo("M249", "W_M249.png"));
+                capitao.SecondaryWeapons.Add(new WeaponInfo("PRB92", "W_PRB92.png"));
+                capitao.SecondaryWeapons.Add(new WeaponInfo("GONNE-6", "W_GONNE6.png"));
+                capitao.SelectedPrimaryIndex = 0;
+                capitao.SelectedSecondaryIndex = 0;
+            }
+
+            var hibana = _profiles.Find(p => p.Name == "Hibana");
+            if (hibana != null)
+            {
+                hibana.PrimaryWeapons.Clear();
+                hibana.SecondaryWeapons.Clear();
+                hibana.PrimaryWeapons.Add(new WeaponInfo("Type-89", "W_TYPE89.png"));
+                hibana.PrimaryWeapons.Add(new WeaponInfo("SuperNova", "W_SUPERNOVA.png"));
+                hibana.SecondaryWeapons.Add(new WeaponInfo("P229", "W_P229.png"));
+                hibana.SecondaryWeapons.Add(new WeaponInfo("Bearing 9", "W_BEARING9.png"));
+                hibana.SelectedPrimaryIndex = 0;
+                hibana.SelectedSecondaryIndex = 0;
+            }
+
+            var jackal = _profiles.Find(p => p.Name == "Jackal");
+            if (jackal != null)
+            {
+                jackal.PrimaryWeapons.Clear();
+                jackal.SecondaryWeapons.Clear();
+                jackal.PrimaryWeapons.Add(new WeaponInfo("C7E", "W_C7E.png"));
+                jackal.PrimaryWeapons.Add(new WeaponInfo("PDW9", "W_PDW9.png"));
+                jackal.PrimaryWeapons.Add(new WeaponInfo("ITA12L", "W_ITA12L.png"));
+                jackal.SecondaryWeapons.Add(new WeaponInfo("USP40", "W_USP40.png"));
+                jackal.SecondaryWeapons.Add(new WeaponInfo("ITA12S", "W_ITA12S.png"));
+                jackal.SelectedPrimaryIndex = 0;
+                jackal.SelectedSecondaryIndex = 0;
+            }
+
+            var ying = _profiles.Find(p => p.Name == "Ying");
+            if (ying != null)
+            {
+                ying.PrimaryWeapons.Clear();
+                ying.SecondaryWeapons.Clear();
+                ying.PrimaryWeapons.Add(new WeaponInfo("T-95 LSW", "W_T95LSW.png"));
+                ying.PrimaryWeapons.Add(new WeaponInfo("SIX12", "W_SIX12.png"));
+                ying.SecondaryWeapons.Add(new WeaponInfo("Q-929", "W_Q929.png"));
+                ying.SecondaryWeapons.Add(new WeaponInfo("Reaper MK2", "W_REAPERMK2.png"));
+                ying.SelectedPrimaryIndex = 0;
+                ying.SelectedSecondaryIndex = 0;
+            }
+
+            var zofia = _profiles.Find(p => p.Name == "Zofia");
+            if (zofia != null)
+            {
+                zofia.PrimaryWeapons.Clear();
+                zofia.SecondaryWeapons.Clear();
+                zofia.PrimaryWeapons.Add(new WeaponInfo("M762", "W_M762.png"));
+                zofia.PrimaryWeapons.Add(new WeaponInfo("LMG-E", "W_LMGE.png"));
+                zofia.SecondaryWeapons.Add(new WeaponInfo("RG15", "W_RG15.png"));
+                zofia.SelectedPrimaryIndex = 0;
+                zofia.SelectedSecondaryIndex = 0;
+            }
+
+            var dokkaebi = _profiles.Find(p => p.Name == "Dokkaebi");
+            if (dokkaebi != null)
+            {
+                dokkaebi.PrimaryWeapons.Clear();
+                dokkaebi.SecondaryWeapons.Clear();
+                dokkaebi.PrimaryWeapons.Add(new WeaponInfo("Mk 14 EBR", "W_MK14EBR.png"));
+                dokkaebi.PrimaryWeapons.Add(new WeaponInfo("BOSG.12.2", "W_BOSG122.png"));
+                dokkaebi.SecondaryWeapons.Add(new WeaponInfo("SMG-12", "W_SMG12.png"));
+                dokkaebi.SecondaryWeapons.Add(new WeaponInfo("GONNE-6", "W_GONNE6.png"));
+                dokkaebi.SecondaryWeapons.Add(new WeaponInfo("C75 Auto", "W_C75AUTO.png"));
+                dokkaebi.SelectedPrimaryIndex = 0;
+                dokkaebi.SelectedSecondaryIndex = 0;
+            }
+
+            var lion = _profiles.Find(p => p.Name == "Lion");
+            if (lion != null)
+            {
+                lion.PrimaryWeapons.Clear();
+                lion.SecondaryWeapons.Clear();
+                lion.PrimaryWeapons.Add(new WeaponInfo("V308", "W_V308.png"));
+                lion.PrimaryWeapons.Add(new WeaponInfo("417", "W_417.png"));
+                lion.PrimaryWeapons.Add(new WeaponInfo("SG-CQB", "W_SGCQB.png"));
+                lion.SecondaryWeapons.Add(new WeaponInfo("P9", "W_P9.png"));
+                lion.SecondaryWeapons.Add(new WeaponInfo("LFP586", "W_LFP586.png"));
+                lion.SelectedPrimaryIndex = 0;
+                lion.SelectedSecondaryIndex = 0;
+            }
+
+            var finka = _profiles.Find(p => p.Name == "Finka");
+            if (finka != null)
+            {
+                finka.PrimaryWeapons.Clear();
+                finka.SecondaryWeapons.Clear();
+                finka.PrimaryWeapons.Add(new WeaponInfo("Spear .308", "W_SPEAR308.png"));
+                finka.PrimaryWeapons.Add(new WeaponInfo("6P41", "W_6P41.png"));
+                finka.PrimaryWeapons.Add(new WeaponInfo("SASG-12", "W_SASG12.png"));
+                finka.SecondaryWeapons.Add(new WeaponInfo("PMM", "W_PMM.png"));
+                finka.SecondaryWeapons.Add(new WeaponInfo("GSh-18", "W_GSH18.png"));
+                finka.SelectedPrimaryIndex = 0;
+                finka.SelectedSecondaryIndex = 0;
+            }
+
+            var maverick = _profiles.Find(p => p.Name == "Maverick");
+            if (maverick != null)
+            {
+                maverick.PrimaryWeapons.Clear();
+                maverick.SecondaryWeapons.Clear();
+                maverick.PrimaryWeapons.Add(new WeaponInfo("AR-15.50", "W_AR1550.png"));
+                maverick.PrimaryWeapons.Add(new WeaponInfo("M4", "W_M4.png"));
+                maverick.SecondaryWeapons.Add(new WeaponInfo("1911 TACOPS", "W_1911TACOPS.png"));
+                maverick.SelectedPrimaryIndex = 0;
+                maverick.SelectedSecondaryIndex = 0;
+            }
+
+            var nomad = _profiles.Find(p => p.Name == "Nomad");
+            if (nomad != null)
+            {
+                nomad.PrimaryWeapons.Clear();
+                nomad.SecondaryWeapons.Clear();
+                nomad.PrimaryWeapons.Add(new WeaponInfo("AK-74M", "W_AK74M.png"));
+                nomad.PrimaryWeapons.Add(new WeaponInfo("ARX200", "W_ARX200.png"));
+                nomad.SecondaryWeapons.Add(new WeaponInfo("PRB92", "W_PRB92.png"));
+                nomad.SecondaryWeapons.Add(new WeaponInfo(".44 Mag Semi-Auto", "W_44MAGSEMIAUTO.png"));
+                nomad.SelectedPrimaryIndex = 0;
+                nomad.SelectedSecondaryIndex = 0;
+            }
+
+            var gridlock = _profiles.Find(p => p.Name == "Gridlock");
+            if (gridlock != null)
+            {
+                gridlock.PrimaryWeapons.Clear();
+                gridlock.SecondaryWeapons.Clear();
+                gridlock.PrimaryWeapons.Add(new WeaponInfo("F90", "W_F90.png"));
+                gridlock.PrimaryWeapons.Add(new WeaponInfo("M249 SAW", "W_M249SAW.png"));
+                gridlock.SecondaryWeapons.Add(new WeaponInfo("Super Shorty", "W_SUPERSHORTY.png"));
+                gridlock.SecondaryWeapons.Add(new WeaponInfo("SDP 9mm", "W_SDP9MM.png"));
+                gridlock.SelectedPrimaryIndex = 0;
+                gridlock.SelectedSecondaryIndex = 0;
+            }
+
+            var nokk = _profiles.Find(p => p.Name == "Nøkk");
+            if (nokk != null)
+            {
+                nokk.PrimaryWeapons.Clear();
+                nokk.SecondaryWeapons.Clear();
+                nokk.PrimaryWeapons.Add(new WeaponInfo("FMG-9", "W_FMG9.png"));
+                nokk.PrimaryWeapons.Add(new WeaponInfo("SIX12 SD", "W_SIX12SD.png"));
+                nokk.SecondaryWeapons.Add(new WeaponInfo("5.7 USG", "W_57USG.png"));
+                nokk.SecondaryWeapons.Add(new WeaponInfo("D-50", "W_D50.png"));
+                nokk.SelectedPrimaryIndex = 0;
+                nokk.SelectedSecondaryIndex = 0;
+            }
+
+            var amaru = _profiles.Find(p => p.Name == "Amaru");
+            if (amaru != null)
+            {
+                amaru.PrimaryWeapons.Clear();
+                amaru.SecondaryWeapons.Clear();
+                amaru.PrimaryWeapons.Add(new WeaponInfo("G8A1", "W_G8A1.png"));
+                amaru.PrimaryWeapons.Add(new WeaponInfo("SuperNova", "W_SUPERNOVA.png"));
+                amaru.SecondaryWeapons.Add(new WeaponInfo("SMG-11", "W_SMG11.png"));
+                amaru.SecondaryWeapons.Add(new WeaponInfo("GONNE-6", "W_GONNE6.png"));
+                amaru.SecondaryWeapons.Add(new WeaponInfo("ITA12S", "W_ITA12S.png"));
+                amaru.SelectedPrimaryIndex = 0;
+                amaru.SelectedSecondaryIndex = 0;
+            }
+
+            var kali = _profiles.Find(p => p.Name == "Kali");
+            if (kali != null)
+            {
+                kali.PrimaryWeapons.Clear();
+                kali.SecondaryWeapons.Clear();
+                kali.PrimaryWeapons.Add(new WeaponInfo("CSRX 300", "W_CSRX300.png"));
+                kali.SecondaryWeapons.Add(new WeaponInfo("SPSMG9", "W_SPSMG9.png"));
+                kali.SecondaryWeapons.Add(new WeaponInfo("C75 Auto", "W_C75AUTO.png"));
+                kali.SecondaryWeapons.Add(new WeaponInfo("P226 Mk 25", "W_P226MK25.png"));
+                kali.SelectedPrimaryIndex = 0;
+                kali.SelectedSecondaryIndex = 0;
+            }
+
+            var iana = _profiles.Find(p => p.Name == "Iana");
+            if (iana != null)
+            {
+                iana.PrimaryWeapons.Clear();
+                iana.SecondaryWeapons.Clear();
+                iana.PrimaryWeapons.Add(new WeaponInfo("ARX200", "W_ARX200.png"));
+                iana.PrimaryWeapons.Add(new WeaponInfo("G36C", "W_G36C.png"));
+                iana.SecondaryWeapons.Add(new WeaponInfo("Mk1 9mm", "W_MK19MM.png"));
+                iana.SecondaryWeapons.Add(new WeaponInfo("GONNE-6", "W_GONNE6.png"));
+                iana.SelectedPrimaryIndex = 0;
+                iana.SelectedSecondaryIndex = 0;
+            }
+
+            var ace = _profiles.Find(p => p.Name == "Ace");
+            if (ace != null)
+            {
+                ace.PrimaryWeapons.Clear();
+                ace.SecondaryWeapons.Clear();
+                ace.PrimaryWeapons.Add(new WeaponInfo("AK-12", "W_AK12.png"));
+                ace.PrimaryWeapons.Add(new WeaponInfo("M1014", "W_M1014.png"));
+                ace.SecondaryWeapons.Add(new WeaponInfo("P9", "W_P9.png"));
+                ace.SelectedPrimaryIndex = 0;
+                ace.SelectedSecondaryIndex = 0;
+            }
+
+            var zero = _profiles.Find(p => p.Name == "Zero");
+            if (zero != null)
+            {
+                zero.PrimaryWeapons.Clear();
+                zero.SecondaryWeapons.Clear();
+                zero.PrimaryWeapons.Add(new WeaponInfo("SC3000K", "W_SC3000K.png"));
+                zero.PrimaryWeapons.Add(new WeaponInfo("MP7", "W_MP7.png"));
+                zero.SecondaryWeapons.Add(new WeaponInfo("5.7 USG", "W_57USG.png"));
+                zero.SecondaryWeapons.Add(new WeaponInfo("GONNE-6", "W_GONNE6.png"));
+                zero.SelectedPrimaryIndex = 0;
+                zero.SelectedSecondaryIndex = 0;
+            }
+
+            var flores = _profiles.Find(p => p.Name == "Flores");
+            if (flores != null)
+            {
+                flores.PrimaryWeapons.Clear();
+                flores.SecondaryWeapons.Clear();
+                flores.PrimaryWeapons.Add(new WeaponInfo("AR33", "W_AR33.png"));
+                flores.PrimaryWeapons.Add(new WeaponInfo("SR-25", "W_SR25.png"));
+                flores.SecondaryWeapons.Add(new WeaponInfo("GSh-18", "W_GSH18.png"));
+                flores.SelectedPrimaryIndex = 0;
+                flores.SelectedSecondaryIndex = 0;
+            }
+
+            var osa = _profiles.Find(p => p.Name == "Osa");
+            if (osa != null)
+            {
+                osa.PrimaryWeapons.Clear();
+                osa.SecondaryWeapons.Clear();
+                osa.PrimaryWeapons.Add(new WeaponInfo("556xi", "W_556XI.png"));
+                osa.PrimaryWeapons.Add(new WeaponInfo("PDW9", "W_PDW9.png"));
+                osa.SecondaryWeapons.Add(new WeaponInfo("PMM", "W_PMM.png"));
+                osa.SelectedPrimaryIndex = 0;
+                osa.SelectedSecondaryIndex = 0;
+            }
+
+            var sens = _profiles.Find(p => p.Name == "Sens");
+            if (sens != null)
+            {
+                sens.PrimaryWeapons.Clear();
+                sens.SecondaryWeapons.Clear();
+                sens.PrimaryWeapons.Add(new WeaponInfo("POF-9", "W_POF9.png"));
+                sens.PrimaryWeapons.Add(new WeaponInfo("417", "W_417.png"));
+                sens.SecondaryWeapons.Add(new WeaponInfo("SDP 9mm", "W_SDP9MM.png"));
+                sens.SelectedPrimaryIndex = 0;
+                sens.SelectedSecondaryIndex = 0;
+            }
+
+            var grim = _profiles.Find(p => p.Name == "Grim");
+            if (grim != null)
+            {
+                grim.PrimaryWeapons.Clear();
+                grim.SecondaryWeapons.Clear();
+                grim.PrimaryWeapons.Add(new WeaponInfo("552 Commando", "W_552COMMANDO.png"));
+                grim.PrimaryWeapons.Add(new WeaponInfo("SG-CQB", "W_SGCQB.png"));
+                grim.SecondaryWeapons.Add(new WeaponInfo("P229", "W_P229.png"));
+                grim.SecondaryWeapons.Add(new WeaponInfo("Bailiff 410", "W_BAILIFF410.png"));
+                grim.SelectedPrimaryIndex = 0;
+                grim.SelectedSecondaryIndex = 0;
+            }
+
+            var brava = _profiles.Find(p => p.Name == "Brava");
+            if (brava != null)
+            {
+                brava.PrimaryWeapons.Clear();
+                brava.SecondaryWeapons.Clear();
+                brava.PrimaryWeapons.Add(new WeaponInfo("PARA-308", "W_PARA308.png"));
+                brava.PrimaryWeapons.Add(new WeaponInfo("CAMRS", "W_CAMRS.png"));
+                brava.SecondaryWeapons.Add(new WeaponInfo("USP40", "W_USP40.png"));
+                brava.SecondaryWeapons.Add(new WeaponInfo("Super Shorty", "W_SUPERSHORTY.png"));
+                brava.SelectedPrimaryIndex = 0;
+                brava.SelectedSecondaryIndex = 0;
+            }
+
+            var ram = _profiles.Find(p => p.Name == "Ram");
+            if (ram != null)
+            {
+                ram.PrimaryWeapons.Clear();
+                ram.SecondaryWeapons.Clear();
+                ram.PrimaryWeapons.Add(new WeaponInfo("LMG-E", "W_LMGE.png"));
+                ram.PrimaryWeapons.Add(new WeaponInfo("R4-C", "W_R4C.png"));
+                ram.SecondaryWeapons.Add(new WeaponInfo("Mk1 9mm", "W_MK19MM.png"));
+                ram.SelectedPrimaryIndex = 0;
+                ram.SelectedSecondaryIndex = 0;
+            }
+
+            var deimos = _profiles.Find(p => p.Name == "Deimos");
+            if (deimos != null)
+            {
+                deimos.PrimaryWeapons.Clear();
+                deimos.SecondaryWeapons.Clear();
+                deimos.PrimaryWeapons.Add(new WeaponInfo("AK-74M", "W_AK74M.png"));
+                deimos.PrimaryWeapons.Add(new WeaponInfo("M590A1", "W_M590A1.png"));
+                deimos.SecondaryWeapons.Add(new WeaponInfo(".44 Vendetta", "W_44VENDETTA.png"));
+                deimos.SelectedPrimaryIndex = 0;
+                deimos.SelectedSecondaryIndex = 0;
+            }
+
+            var rauora = _profiles.Find(p => p.Name == "Rauora");
+            if (rauora != null)
+            {
+                rauora.PrimaryWeapons.Clear();
+                rauora.SecondaryWeapons.Clear();
+                rauora.PrimaryWeapons.Add(new WeaponInfo("417", "W_417.png"));
+                rauora.PrimaryWeapons.Add(new WeaponInfo("M249", "W_M249.png"));
+                rauora.SecondaryWeapons.Add(new WeaponInfo("Reaper MK2", "W_REAPERMK2.png"));
+                rauora.SecondaryWeapons.Add(new WeaponInfo("GSh-18", "W_GSH18.png"));
+                rauora.SelectedPrimaryIndex = 0;
+                rauora.SelectedSecondaryIndex = 0;
+            }
+
+            // DEFENDERS
+            var sentry = _profiles.Find(p => p.Name == "Sentry");
+            if (sentry != null)
+            {
+                sentry.PrimaryWeapons.Clear();
+                sentry.SecondaryWeapons.Clear();
+                sentry.PrimaryWeapons.Add(new WeaponInfo("Commando 9", "W_COMMANDO9.png"));
+                sentry.PrimaryWeapons.Add(new WeaponInfo("M870", "W_M870.png"));
+                sentry.PrimaryWeapons.Add(new WeaponInfo("TCSG12", "W_TCSG12.png"));
+                sentry.SecondaryWeapons.Add(new WeaponInfo("C75 Auto", "W_C75AUTO.png"));
+                sentry.SecondaryWeapons.Add(new WeaponInfo("Super Shorty", "W_SUPERSHORTY.png"));
+                sentry.SelectedPrimaryIndex = 0;
+                sentry.SelectedSecondaryIndex = 0;
+            }
+
+            var smoke = _profiles.Find(p => p.Name == "Smoke");
+            if (smoke != null)
+            {
+                smoke.PrimaryWeapons.Clear();
+                smoke.SecondaryWeapons.Clear();
+                smoke.PrimaryWeapons.Add(new WeaponInfo("M590A1", "W_M590A1.png"));
+                smoke.PrimaryWeapons.Add(new WeaponInfo("FMG-9", "W_FMG9.png"));
+                smoke.SecondaryWeapons.Add(new WeaponInfo("P226 Mk 25", "W_P226MK25.png"));
+                smoke.SecondaryWeapons.Add(new WeaponInfo("SMG-11", "W_SMG11.png"));
+                smoke.SelectedPrimaryIndex = 0;
+                smoke.SelectedSecondaryIndex = 0;
+            }
+
+            var mute = _profiles.Find(p => p.Name == "Mute");
+            if (mute != null)
+            {
+                mute.PrimaryWeapons.Clear();
+                mute.SecondaryWeapons.Clear();
+                mute.PrimaryWeapons.Add(new WeaponInfo("MP5K", "W_MP5K.png"));
+                mute.PrimaryWeapons.Add(new WeaponInfo("M590A1", "W_M590A1.png"));
+                mute.SecondaryWeapons.Add(new WeaponInfo("P226 Mk 25", "W_P226MK25.png"));
+                mute.SecondaryWeapons.Add(new WeaponInfo("SMG-11", "W_SMG11.png"));
+                mute.SelectedPrimaryIndex = 0;
+                mute.SelectedSecondaryIndex = 0;
+            }
+
+            var castle = _profiles.Find(p => p.Name == "Castle");
+            if (castle != null)
+            {
+                castle.PrimaryWeapons.Clear();
+                castle.SecondaryWeapons.Clear();
+                castle.PrimaryWeapons.Add(new WeaponInfo("UMP45", "W_UMP45.png"));
+                castle.PrimaryWeapons.Add(new WeaponInfo("M1014", "W_M1014.png"));
+                castle.SecondaryWeapons.Add(new WeaponInfo("5.7 USG", "W_57USG.png"));
+                castle.SecondaryWeapons.Add(new WeaponInfo("Super Shorty", "W_SUPERSHORTY.png"));
+                castle.SelectedPrimaryIndex = 0;
+                castle.SelectedSecondaryIndex = 0;
+            }
+
+            var pulse = _profiles.Find(p => p.Name == "Pulse");
+            if (pulse != null)
+            {
+                pulse.PrimaryWeapons.Clear();
+                pulse.SecondaryWeapons.Clear();
+                pulse.PrimaryWeapons.Add(new WeaponInfo("UMP45", "W_UMP45.png"));
+                pulse.PrimaryWeapons.Add(new WeaponInfo("M1014", "W_M1014.png"));
+                pulse.SecondaryWeapons.Add(new WeaponInfo("5.7 USG", "W_57USG.png"));
+                pulse.SecondaryWeapons.Add(new WeaponInfo("M45 MEUSOC", "W_M45MEUSOC.png"));
+                pulse.SelectedPrimaryIndex = 0;
+                pulse.SelectedSecondaryIndex = 0;
+            }
+
+            var doc = _profiles.Find(p => p.Name == "Doc");
+            if (doc != null)
+            {
+                doc.PrimaryWeapons.Clear();
+                doc.SecondaryWeapons.Clear();
+                doc.PrimaryWeapons.Add(new WeaponInfo("MP5", "W_MP5.png"));
+                doc.PrimaryWeapons.Add(new WeaponInfo("P90", "W_P90.png"));
+                doc.PrimaryWeapons.Add(new WeaponInfo("SG-CQB", "W_SGCQB.png"));
+                doc.SecondaryWeapons.Add(new WeaponInfo("P9", "W_P9.png"));
+                doc.SecondaryWeapons.Add(new WeaponInfo("LFP586", "W_LFP586.png"));
+                doc.SecondaryWeapons.Add(new WeaponInfo("Bailiff 410", "W_BAILIFF410.png"));
+                doc.SelectedPrimaryIndex = 0;
+                doc.SelectedSecondaryIndex = 0;
+            }
+
+            var rook = _profiles.Find(p => p.Name == "Rook");
+            if (rook != null)
+            {
+                rook.PrimaryWeapons.Clear();
+                rook.SecondaryWeapons.Clear();
+                rook.PrimaryWeapons.Add(new WeaponInfo("MP5", "W_MP5.png"));
+                rook.PrimaryWeapons.Add(new WeaponInfo("P90", "W_P90.png"));
+                rook.PrimaryWeapons.Add(new WeaponInfo("SG-CQB", "W_SGCQB.png"));
+                rook.SecondaryWeapons.Add(new WeaponInfo("P9", "W_P9.png"));
+                rook.SecondaryWeapons.Add(new WeaponInfo("LFP586", "W_LFP586.png"));
+                rook.SelectedPrimaryIndex = 0;
+                rook.SelectedSecondaryIndex = 0;
+            }
+
+            var kapkan = _profiles.Find(p => p.Name == "Kapkan");
+            if (kapkan != null)
+            {
+                kapkan.PrimaryWeapons.Clear();
+                kapkan.SecondaryWeapons.Clear();
+                kapkan.PrimaryWeapons.Add(new WeaponInfo("9x19VSN", "W_9X19VSN.png"));
+                kapkan.PrimaryWeapons.Add(new WeaponInfo("SASG-12", "W_SASG12.png"));
+                kapkan.SecondaryWeapons.Add(new WeaponInfo("PMM", "W_PMM.png"));
+                kapkan.SecondaryWeapons.Add(new WeaponInfo("GSh-18", "W_GSH18.png"));
+                kapkan.SelectedPrimaryIndex = 0;
+                kapkan.SelectedSecondaryIndex = 0;
+            }
+
+            var tachanka = _profiles.Find(p => p.Name == "Tachanka");
+            if (tachanka != null)
+            {
+                tachanka.PrimaryWeapons.Clear();
+                tachanka.SecondaryWeapons.Clear();
+                tachanka.PrimaryWeapons.Add(new WeaponInfo("DP27 (LMG)", "W_DP27LMG.png"));
+                tachanka.PrimaryWeapons.Add(new WeaponInfo("9x19VSN", "W_9X19VSN.png"));
+                tachanka.SecondaryWeapons.Add(new WeaponInfo("PMM", "W_PMM.png"));
+                tachanka.SecondaryWeapons.Add(new WeaponInfo("GSh-18", "W_GSH18.png"));
+                tachanka.SelectedPrimaryIndex = 0;
+                tachanka.SelectedSecondaryIndex = 0;
+            }
+
+            var jager = _profiles.Find(p => p.Name == "Jäger");
+            if (jager != null)
+            {
+                jager.PrimaryWeapons.Clear();
+                jager.SecondaryWeapons.Clear();
+                jager.PrimaryWeapons.Add(new WeaponInfo("416-C Carbine", "W_416CCARBINE.png"));
+                jager.PrimaryWeapons.Add(new WeaponInfo("M870", "W_M870.png"));
+                jager.SecondaryWeapons.Add(new WeaponInfo("P12", "W_P12.png"));
+                jager.SelectedPrimaryIndex = 0;
+                jager.SelectedSecondaryIndex = 0;
+            }
+
+            var bandit = _profiles.Find(p => p.Name == "Bandit");
+            if (bandit != null)
+            {
+                bandit.PrimaryWeapons.Clear();
+                bandit.SecondaryWeapons.Clear();
+                bandit.PrimaryWeapons.Add(new WeaponInfo("MP7", "W_MP7.png"));
+                bandit.PrimaryWeapons.Add(new WeaponInfo("M870", "W_M870.png"));
+                bandit.SecondaryWeapons.Add(new WeaponInfo("P12", "W_P12.png"));
+                bandit.SelectedPrimaryIndex = 0;
+                bandit.SelectedSecondaryIndex = 0;
+            }
+
+            var frost = _profiles.Find(p => p.Name == "Frost");
+            if (frost != null)
+            {
+                frost.PrimaryWeapons.Clear();
+                frost.SecondaryWeapons.Clear();
+                frost.PrimaryWeapons.Add(new WeaponInfo("9mm C1", "W_9MMC1.png"));
+                frost.PrimaryWeapons.Add(new WeaponInfo("Super 90", "W_SUPER90.png"));
+                frost.SecondaryWeapons.Add(new WeaponInfo("Mk1 9mm", "W_MK19MM.png"));
+                frost.SecondaryWeapons.Add(new WeaponInfo("ITA12S", "W_ITA12S.png"));
+                frost.SelectedPrimaryIndex = 0;
+                frost.SelectedSecondaryIndex = 0;
+            }
+
+            var valkyrie = _profiles.Find(p => p.Name == "Valkyrie");
+            if (valkyrie != null)
+            {
+                valkyrie.PrimaryWeapons.Clear();
+                valkyrie.SecondaryWeapons.Clear();
+                valkyrie.PrimaryWeapons.Add(new WeaponInfo("MPX", "W_MPX.png"));
+                valkyrie.PrimaryWeapons.Add(new WeaponInfo("SPAS-12", "W_SPAS12.png"));
+                valkyrie.SecondaryWeapons.Add(new WeaponInfo("D-50", "W_D50.png"));
+                valkyrie.SelectedPrimaryIndex = 0;
+                valkyrie.SelectedSecondaryIndex = 0;
+            }
+
+            var caveira = _profiles.Find(p => p.Name == "Caveira");
+            if (caveira != null)
+            {
+                caveira.PrimaryWeapons.Clear();
+                caveira.SecondaryWeapons.Clear();
+                caveira.PrimaryWeapons.Add(new WeaponInfo("M12", "W_M12.png"));
+                caveira.PrimaryWeapons.Add(new WeaponInfo("SPAS-15", "W_SPAS15.png"));
+                caveira.SecondaryWeapons.Add(new WeaponInfo("Luison", "W_LUISON.png"));
+                caveira.SelectedPrimaryIndex = 0;
+                caveira.SelectedSecondaryIndex = 0;
+            }
+
+            var echo = _profiles.Find(p => p.Name == "Echo");
+            if (echo != null)
+            {
+                echo.PrimaryWeapons.Clear();
+                echo.SecondaryWeapons.Clear();
+                echo.PrimaryWeapons.Add(new WeaponInfo("MP5SD", "W_MP5SD.png"));
+                echo.PrimaryWeapons.Add(new WeaponInfo("SuperNova", "W_SUPERNOVA.png"));
+                echo.SecondaryWeapons.Add(new WeaponInfo("P229", "W_P229.png"));
+                echo.SecondaryWeapons.Add(new WeaponInfo("Bearing 9", "W_BEARING9.png"));
+                echo.SelectedPrimaryIndex = 0;
+                echo.SelectedSecondaryIndex = 0;
+            }
+
+            var mira = _profiles.Find(p => p.Name == "Mira");
+            if (mira != null)
+            {
+                mira.PrimaryWeapons.Clear();
+                mira.SecondaryWeapons.Clear();
+                mira.PrimaryWeapons.Add(new WeaponInfo("Vector .45 ACP", "W_VECTOR45ACP.png"));
+                mira.PrimaryWeapons.Add(new WeaponInfo("ITA12L", "W_ITA12L.png"));
+                mira.SecondaryWeapons.Add(new WeaponInfo("ITA12S", "W_ITA12S.png"));
+                mira.SecondaryWeapons.Add(new WeaponInfo("USP40", "W_USP40.png"));
+                mira.SelectedPrimaryIndex = 0;
+                mira.SelectedSecondaryIndex = 0;
+            }
+
+            var lesion = _profiles.Find(p => p.Name == "Lesion");
+            if (lesion != null)
+            {
+                lesion.PrimaryWeapons.Clear();
+                lesion.SecondaryWeapons.Clear();
+                lesion.PrimaryWeapons.Add(new WeaponInfo("T-5 SMG", "W_T5SMG.png"));
+                lesion.PrimaryWeapons.Add(new WeaponInfo("SIX12", "W_SIX12.png"));
+                lesion.SecondaryWeapons.Add(new WeaponInfo("Q-929", "W_Q929.png"));
+                lesion.SelectedPrimaryIndex = 0;
+                lesion.SelectedSecondaryIndex = 0;
+            }
+
+            var ela = _profiles.Find(p => p.Name == "Ela");
+            if (ela != null)
+            {
+                ela.PrimaryWeapons.Clear();
+                ela.SecondaryWeapons.Clear();
+                ela.PrimaryWeapons.Add(new WeaponInfo("Scorpion EVO 3 A1", "W_SCORPIONEVO3A1.png"));
+                ela.PrimaryWeapons.Add(new WeaponInfo("FO-12", "W_FO12.png"));
+                ela.SecondaryWeapons.Add(new WeaponInfo("RG15", "W_RG15.png"));
+                ela.SelectedPrimaryIndex = 0;
+                ela.SelectedSecondaryIndex = 0;
+            }
+
+            var vigil = _profiles.Find(p => p.Name == "Vigil");
+            if (vigil != null)
+            {
+                vigil.PrimaryWeapons.Clear();
+                vigil.SecondaryWeapons.Clear();
+                vigil.PrimaryWeapons.Add(new WeaponInfo("K1A", "W_K1A.png"));
+                vigil.PrimaryWeapons.Add(new WeaponInfo("BOSG.12.2", "W_BOSG122.png"));
+                vigil.SecondaryWeapons.Add(new WeaponInfo("C75 Auto", "W_C75AUTO.png"));
+                vigil.SecondaryWeapons.Add(new WeaponInfo("SMG-12", "W_SMG12.png"));
+                vigil.SelectedPrimaryIndex = 0;
+                vigil.SelectedSecondaryIndex = 0;
+            }
+
+            var alibi = _profiles.Find(p => p.Name == "Alibi");
+            if (alibi != null)
+            {
+                alibi.PrimaryWeapons.Clear();
+                alibi.SecondaryWeapons.Clear();
+                alibi.PrimaryWeapons.Add(new WeaponInfo("Mx4 Storm", "W_MX4STORM.png"));
+                alibi.PrimaryWeapons.Add(new WeaponInfo("ACS12", "W_ACS12.png"));
+                alibi.SecondaryWeapons.Add(new WeaponInfo("Keratos .357", "W_KERATOS357.png"));
+                alibi.SecondaryWeapons.Add(new WeaponInfo("Bailiff 410", "W_BAILIFF410.png"));
+                alibi.SelectedPrimaryIndex = 0;
+                alibi.SelectedSecondaryIndex = 0;
+            }
+
+            var maestro = _profiles.Find(p => p.Name == "Maestro");
+            if (maestro != null)
+            {
+                maestro.PrimaryWeapons.Clear();
+                maestro.SecondaryWeapons.Clear();
+                maestro.PrimaryWeapons.Add(new WeaponInfo("ALDA 5.56", "W_ALDA556.png"));
+                maestro.PrimaryWeapons.Add(new WeaponInfo("ACS12", "W_ACS12.png"));
+                maestro.SecondaryWeapons.Add(new WeaponInfo("Keratos .357", "W_KERATOS357.png"));
+                maestro.SecondaryWeapons.Add(new WeaponInfo("Bailiff 410", "W_BAILIFF410.png"));
+                maestro.SelectedPrimaryIndex = 0;
+                maestro.SelectedSecondaryIndex = 0;
+            }
+
+            var clash = _profiles.Find(p => p.Name == "Clash");
+            if (clash != null)
+            {
+                clash.PrimaryWeapons.Clear();
+                clash.SecondaryWeapons.Clear();
+                clash.PrimaryWeapons.Add(new WeaponInfo("CCE Shield", "W_CCESHIELD.png"));
+                clash.SecondaryWeapons.Add(new WeaponInfo("P-10C", "W_P10C.png"));
+                clash.SecondaryWeapons.Add(new WeaponInfo("SPSMG9", "W_SPSMG9.png"));
+                clash.SelectedPrimaryIndex = 0;
+                clash.SelectedSecondaryIndex = 0;
+            }
+
+            var kaid = _profiles.Find(p => p.Name == "Kaid");
+            if (kaid != null)
+            {
+                kaid.PrimaryWeapons.Clear();
+                kaid.SecondaryWeapons.Clear();
+                kaid.PrimaryWeapons.Add(new WeaponInfo("AUG A3", "W_AUGA3.png"));
+                kaid.PrimaryWeapons.Add(new WeaponInfo("TCSG12", "W_TCSG12.png"));
+                kaid.SecondaryWeapons.Add(new WeaponInfo(".44 Mag Semi-Auto", "W_44MAGSEMIAUTO.png"));
+                kaid.SecondaryWeapons.Add(new WeaponInfo("LFP586", "W_LFP586.png"));
+                kaid.SelectedPrimaryIndex = 0;
+                kaid.SelectedSecondaryIndex = 0;
+            }
+
+            var mozzie = _profiles.Find(p => p.Name == "Mozzie");
+            if (mozzie != null)
+            {
+                mozzie.PrimaryWeapons.Clear();
+                mozzie.SecondaryWeapons.Clear();
+                mozzie.PrimaryWeapons.Add(new WeaponInfo("Commando 9", "W_COMMANDO9.png"));
+                mozzie.PrimaryWeapons.Add(new WeaponInfo("P10 RONI", "W_P10RONI.png"));
+                mozzie.SecondaryWeapons.Add(new WeaponInfo("SDP 9mm", "W_SDP9MM.png"));
+                mozzie.SecondaryWeapons.Add(new WeaponInfo("Super Shorty", "W_SUPERSHORTY.png"));
+                mozzie.SelectedPrimaryIndex = 0;
+                mozzie.SelectedSecondaryIndex = 0;
+            }
+
+            var warden = _profiles.Find(p => p.Name == "Warden");
+            if (warden != null)
+            {
+                warden.PrimaryWeapons.Clear();
+                warden.SecondaryWeapons.Clear();
+                warden.PrimaryWeapons.Add(new WeaponInfo("MPX", "W_MPX.png"));
+                warden.PrimaryWeapons.Add(new WeaponInfo("M590A1", "W_M590A1.png"));
+                warden.SecondaryWeapons.Add(new WeaponInfo("P-10C", "W_P10C.png"));
+                warden.SecondaryWeapons.Add(new WeaponInfo("SMG-12", "W_SMG12.png"));
+                warden.SelectedPrimaryIndex = 0;
+                warden.SelectedSecondaryIndex = 0;
+            }
+
+            var goyo = _profiles.Find(p => p.Name == "Goyo");
+            if (goyo != null)
+            {
+                goyo.PrimaryWeapons.Clear();
+                goyo.SecondaryWeapons.Clear();
+                goyo.PrimaryWeapons.Add(new WeaponInfo("Vector .45 ACP", "W_VECTOR45ACP.png"));
+                goyo.PrimaryWeapons.Add(new WeaponInfo("TCSG12", "W_TCSG12.png"));
+                goyo.SecondaryWeapons.Add(new WeaponInfo("P229", "W_P229.png"));
+                goyo.SelectedPrimaryIndex = 0;
+                goyo.SelectedSecondaryIndex = 0;
+            }
+
+            var wamai = _profiles.Find(p => p.Name == "Wamai");
+            if (wamai != null)
+            {
+                wamai.PrimaryWeapons.Clear();
+                wamai.SecondaryWeapons.Clear();
+                wamai.PrimaryWeapons.Add(new WeaponInfo("AUG A2", "W_AUGA2.png"));
+                wamai.PrimaryWeapons.Add(new WeaponInfo("MP5K", "W_MP5K.png"));
+                wamai.SecondaryWeapons.Add(new WeaponInfo("Keratos .357", "W_KERATOS357.png"));
+                wamai.SecondaryWeapons.Add(new WeaponInfo("P12", "W_P12.png"));
+                wamai.SelectedPrimaryIndex = 0;
+                wamai.SelectedSecondaryIndex = 0;
+            }
+
+            var oryx = _profiles.Find(p => p.Name == "Oryx");
+            if (oryx != null)
+            {
+                oryx.PrimaryWeapons.Clear();
+                oryx.SecondaryWeapons.Clear();
+                oryx.PrimaryWeapons.Add(new WeaponInfo("T-5 SMG", "W_T5SMG.png"));
+                oryx.PrimaryWeapons.Add(new WeaponInfo("SPAS-12", "W_SPAS12.png"));
+                oryx.SecondaryWeapons.Add(new WeaponInfo("Bailiff 410", "W_BAILIFF410.png"));
+                oryx.SecondaryWeapons.Add(new WeaponInfo("USP40", "W_USP40.png"));
+                oryx.SelectedPrimaryIndex = 0;
+                oryx.SelectedSecondaryIndex = 0;
+            }
+
+            var melusi = _profiles.Find(p => p.Name == "Melusi");
+            if (melusi != null)
+            {
+                melusi.PrimaryWeapons.Clear();
+                melusi.SecondaryWeapons.Clear();
+                melusi.PrimaryWeapons.Add(new WeaponInfo("T-5 SMG", "W_T5SMG.png"));
+                melusi.PrimaryWeapons.Add(new WeaponInfo("Super 90", "W_SUPER90.png"));
+                melusi.SecondaryWeapons.Add(new WeaponInfo("RG15", "W_RG15.png"));
+                melusi.SelectedPrimaryIndex = 0;
+                melusi.SelectedSecondaryIndex = 0;
+            }
+
+            var aruni = _profiles.Find(p => p.Name == "Aruni");
+            if (aruni != null)
+            {
+                aruni.PrimaryWeapons.Clear();
+                aruni.SecondaryWeapons.Clear();
+                aruni.PrimaryWeapons.Add(new WeaponInfo("P10 RONI", "W_P10RONI.png"));
+                aruni.PrimaryWeapons.Add(new WeaponInfo("MK14 EBR", "W_MK14EBR.png"));
+                aruni.SecondaryWeapons.Add(new WeaponInfo("PRB92", "W_PRB92.png"));
+                aruni.SelectedPrimaryIndex = 0;
+                aruni.SelectedSecondaryIndex = 0;
+            }
+
+            var thunderbird = _profiles.Find(p => p.Name == "Thunderbird");
+            if (thunderbird != null)
+            {
+                thunderbird.PrimaryWeapons.Clear();
+                thunderbird.SecondaryWeapons.Clear();
+                thunderbird.PrimaryWeapons.Add(new WeaponInfo("SPEAR .308", "W_SPEAR308.png"));
+                thunderbird.PrimaryWeapons.Add(new WeaponInfo("SPAS-15", "W_SPAS15.png"));
+                thunderbird.SecondaryWeapons.Add(new WeaponInfo("Q-929", "W_Q929.png"));
+                thunderbird.SecondaryWeapons.Add(new WeaponInfo("Bearing 9", "W_BEARING9.png"));
+                thunderbird.SelectedPrimaryIndex = 0;
+                thunderbird.SelectedSecondaryIndex = 0;
+            }
+
+            var thorn = _profiles.Find(p => p.Name == "Thorn");
+            if (thorn != null)
+            {
+                thorn.PrimaryWeapons.Clear();
+                thorn.SecondaryWeapons.Clear();
+                thorn.PrimaryWeapons.Add(new WeaponInfo("UZK50Gi", "W_UZK50GI.png"));
+                thorn.PrimaryWeapons.Add(new WeaponInfo("M870", "W_M870.png"));
+                thorn.SecondaryWeapons.Add(new WeaponInfo("1911 TACOPS", "W_1911TACOPS.png"));
+                thorn.SecondaryWeapons.Add(new WeaponInfo("C75 Auto", "W_C75AUTO.png"));
+                thorn.SelectedPrimaryIndex = 0;
+                thorn.SelectedSecondaryIndex = 0;
+            }
+
+            var azami = _profiles.Find(p => p.Name == "Azami");
+            if (azami != null)
+            {
+                azami.PrimaryWeapons.Clear();
+                azami.SecondaryWeapons.Clear();
+                azami.PrimaryWeapons.Add(new WeaponInfo("9X19SVN", "W_9X19SVN.png"));
+                azami.PrimaryWeapons.Add(new WeaponInfo("ACS12", "W_ACS12.png"));
+                azami.SecondaryWeapons.Add(new WeaponInfo("D-50", "W_D50.png"));
+                azami.SelectedPrimaryIndex = 0;
+                azami.SelectedSecondaryIndex = 0;
+            }
+
+            var solis = _profiles.Find(p => p.Name == "Solis");
+            if (solis != null)
+            {
+                solis.PrimaryWeapons.Clear();
+                solis.SecondaryWeapons.Clear();
+                solis.PrimaryWeapons.Add(new WeaponInfo("P90", "W_P90.png"));
+                solis.PrimaryWeapons.Add(new WeaponInfo("ITA12L", "W_ITA12L.png"));
+                solis.SecondaryWeapons.Add(new WeaponInfo("SMG-11", "W_SMG11.png"));
+                solis.SelectedPrimaryIndex = 0;
+                solis.SelectedSecondaryIndex = 0;
+            }
+
+            var fenrir = _profiles.Find(p => p.Name == "Fenrir");
+            if (fenrir != null)
+            {
+                fenrir.PrimaryWeapons.Clear();
+                fenrir.SecondaryWeapons.Clear();
+                fenrir.PrimaryWeapons.Add(new WeaponInfo("MP7", "W_MP7.png"));
+                fenrir.PrimaryWeapons.Add(new WeaponInfo("SASG-12", "W_SASG12.png"));
+                fenrir.SecondaryWeapons.Add(new WeaponInfo("5.7 USG", "W_57USG.png"));
+                fenrir.SelectedPrimaryIndex = 0;
+                fenrir.SelectedSecondaryIndex = 0;
+            }
+
+            var tubarao = _profiles.Find(p => p.Name == "Tubarão");
+            if (tubarao != null)
+            {
+                tubarao.PrimaryWeapons.Clear();
+                tubarao.SecondaryWeapons.Clear();
+                tubarao.PrimaryWeapons.Add(new WeaponInfo("MPX", "W_MPX.png"));
+                tubarao.PrimaryWeapons.Add(new WeaponInfo("AR-15.50", "W_AR1550.png"));
+                tubarao.SecondaryWeapons.Add(new WeaponInfo("P226 Mk 25", "W_P226MK25.png"));
+                tubarao.SelectedPrimaryIndex = 0;
+                tubarao.SelectedSecondaryIndex = 0;
+            }
+
+            var skopos = _profiles.Find(p => p.Name == "Skopós");
+            if (skopos != null)
+            {
+                skopos.PrimaryWeapons.Clear();
+                skopos.SecondaryWeapons.Clear();
+                skopos.PrimaryWeapons.Add(new WeaponInfo("PCX-33", "W_PCX33.png"));
+                skopos.SecondaryWeapons.Add(new WeaponInfo("P229", "W_P229.png"));
+                skopos.SelectedPrimaryIndex = 0;
+                skopos.SelectedSecondaryIndex = 0;
+            }
+
+            var denari = _profiles.Find(p => p.Name == "Denari");
+            if (denari != null)
+            {
+                denari.PrimaryWeapons.Clear();
+                denari.SecondaryWeapons.Clear();
+                denari.PrimaryWeapons.Add(new WeaponInfo("Scorpion EVO 3 A1", "W_SCORPIONEVO3A1.png"));
+                denari.PrimaryWeapons.Add(new WeaponInfo("FMG-9", "W_FMG9.png"));
+                denari.SecondaryWeapons.Add(new WeaponInfo("Glaive-12", "W_GLAIVE12.png"));
+                denari.SecondaryWeapons.Add(new WeaponInfo("P226 Mk 25", "W_P226MK25.png"));
+                denari.SelectedPrimaryIndex = 0;
+                denari.SelectedSecondaryIndex = 0;
+            }
         }
 
 
@@ -1759,6 +3019,18 @@ namespace MouseSliderApp
             SaveProfilesToFile();
             ClearPictureBoxImage();
 
+            if (_picturePrimaryWeapon?.Image != null)
+            {
+                _picturePrimaryWeapon.Image.Dispose();
+                _picturePrimaryWeapon.Image = null;
+            }
+
+            if (_pictureSecondaryWeapon?.Image != null)
+            {
+                _pictureSecondaryWeapon.Image.Dispose();
+                _pictureSecondaryWeapon.Image = null;
+            }
+
             if (_appLogoImage != null)
             {
                 _appLogoImage.Dispose();
@@ -1787,9 +3059,10 @@ namespace MouseSliderApp
             if (_textKey1 != null) _textKey1.Text = "None";
             if (_textKey2 != null) _textKey2.Text = "None";
             _currentSetupIndex = 1;
-            if (_labelActiveSetup != null) _labelActiveSetup.Text = "Active setup: 1";
+            if (_labelActiveSetup != null) _labelActiveSetup.Text = "Active setup: 1 (Primary)";
 
             ClearPictureBoxImage();
+            UpdateWeaponUi();
 
             StyleSegmentButton(_buttonCategoryA, category == "A");
             StyleSegmentButton(_buttonCategoryB, category == "B");
@@ -1806,7 +3079,6 @@ namespace MouseSliderApp
             RefreshProfileCards();
         }
 
-        // (2a) search + category filtering
         private void RefreshProfileCards()
         {
             if (_profilesPanel == null)
@@ -1860,6 +3132,7 @@ namespace MouseSliderApp
             {
                 _currentProfile = null;
                 UpdateSelectedProfileDetails();
+                UpdateWeaponUi();
             }
 
             CenterProfiles();
@@ -2130,29 +3403,54 @@ namespace MouseSliderApp
 
             if (_currentProfile == null)
             {
-                _labelSetup1Summary.Text = "Setup 1: (no values)";
-                _labelSetup2Summary.Text = "Setup 2: (no values)";
+                _labelSetup1Summary.Text = "Primary: (no values)";
+                _labelSetup2Summary.Text = "Secondary: (no values)";
                 return;
             }
 
-            _labelSetup1Summary.Text =
-                $"Setup 1: H = {_currentProfile.Horizontal1:0.000}, V = {_currentProfile.Vertical1:0.000}";
+            var primary = _currentProfile.SelectedPrimaryWeapon;
+            var secondary = _currentProfile.SelectedSecondaryWeapon;
 
-            _labelSetup2Summary.Text =
-                $"Setup 2: H = {_currentProfile.Horizontal2:0.000}, V = {_currentProfile.Vertical2:0.000}";
+            if (primary != null)
+            {
+                _labelSetup1Summary.Text =
+                    $"Primary ({primary.Name}): H = {primary.Horizontal:0.000}, V = {primary.Vertical:0.000}";
+            }
+            else
+            {
+                _labelSetup1Summary.Text = "Primary: H = 0.000, V = 0.000";
+            }
+
+            if (secondary != null)
+            {
+                _labelSetup2Summary.Text =
+                    $"Secondary ({secondary.Name}): H = {secondary.Horizontal:0.000}, V = {secondary.Vertical:0.000}";
+            }
+            else
+            {
+                _labelSetup2Summary.Text = "Secondary: H = 0.000, V = 0.000";
+            }
         }
 
         private void LoadProfile(Profile profile)
         {
             _currentSetupIndex = 1;
-            _labelActiveSetup.Text = "Active setup: 1";
+            _labelActiveSetup.Text = "Active setup: 1 (Primary)";
 
             _textKey1.Text = profile.Key1 == Keys.None ? "None" : profile.Key1.ToString();
             _textKey2.Text = profile.Key2 == Keys.None ? "None" : profile.Key2.ToString();
 
-            ApplyProfileSetup(profile, 1);
+            // make sure indexes are in range
+            if (profile.PrimaryWeapons.Count > 0 &&
+                profile.SelectedPrimaryIndex >= profile.PrimaryWeapons.Count)
+                profile.SelectedPrimaryIndex = 0;
 
-            // update summary labels when profile changes
+            if (profile.SecondaryWeapons.Count > 0 &&
+                profile.SelectedSecondaryIndex >= profile.SecondaryWeapons.Count)
+                profile.SelectedSecondaryIndex = 0;
+
+            ApplyProfileSetup(profile, 1);
+            UpdateWeaponUi();
             UpdateSetupSummaryLabels();
         }
 
@@ -2167,6 +3465,21 @@ namespace MouseSliderApp
             profile.Vertical2 = 0.0;
             profile.Key1 = Keys.None;
             profile.Key2 = Keys.None;
+
+            profile.SelectedPrimaryIndex = 0;
+            profile.SelectedSecondaryIndex = 0;
+
+            foreach (var w in profile.PrimaryWeapons)
+            {
+                w.Horizontal = 0.0;
+                w.Vertical = 0.0;
+            }
+
+            foreach (var w in profile.SecondaryWeapons)
+            {
+                w.Horizontal = 0.0;
+                w.Vertical = 0.0;
+            }
         }
 
         // ==========================================================
@@ -2199,15 +3512,17 @@ namespace MouseSliderApp
             UpdateVerticalDisplay();
 
             _currentSetupIndex = 1;
-            _labelActiveSetup.Text = "Active setup: 1";
+            _labelActiveSetup.Text = "Active setup: 1 (Primary)";
             _textKey1.Text = "None";
             _textKey2.Text = "None";
 
             if (_currentProfile != null)
             {
                 UpdateSelectedProfileDetails();
-                UpdateSetupSummaryLabels(); // keep summaries in sync
+                UpdateSetupSummaryLabels();
             }
+
+            UpdateWeaponUi();
 
             try
             {
@@ -2250,15 +3565,15 @@ namespace MouseSliderApp
             ResetProfileData(_currentProfile);
 
             _currentSetupIndex = 1;
-            _labelActiveSetup.Text = "Active setup: 1";
+            _labelActiveSetup.Text = "Active setup: 1 (Primary)";
 
             ApplyProfileSetup(_currentProfile, 1);
 
             _textKey1.Text = "None";
             _textKey2.Text = "None";
 
-            // update summary labels after reset
             UpdateSetupSummaryLabels();
+            UpdateWeaponUi();
 
             MessageBox.Show(
                 $"Profile {_currentProfile.Name} has been reset.",
@@ -2329,6 +3644,37 @@ namespace MouseSliderApp
             }
         }
 
+        private void LoadWeaponImage(PictureBox? pictureBox, string? fileName)
+        {
+            if (pictureBox == null)
+                return;
+
+            if (pictureBox.Image != null)
+            {
+                pictureBox.Image.Dispose();
+                pictureBox.Image = null;
+            }
+
+            if (string.IsNullOrWhiteSpace(fileName))
+                return;
+
+            try
+            {
+                string fullPath = Path.Combine(_imagesFolder, fileName);
+                if (!File.Exists(fullPath))
+                    return;
+
+                using (var img = Image.FromFile(fullPath))
+                {
+                    pictureBox.Image = new Bitmap(img);
+                }
+            }
+            catch
+            {
+                // ignore load errors – just leave it empty
+            }
+        }
+
         // ==========================================================
         // Key capture
         // ==========================================================
@@ -2395,9 +3741,14 @@ namespace MouseSliderApp
             _currentProfile.Horizontal1 = _horizontalSpeed;
             _currentProfile.Vertical1 = _verticalSpeed;
 
-            ApplyProfileSetup(_currentProfile, 1);
+            var primary = _currentProfile.SelectedPrimaryWeapon;
+            if (primary != null)
+            {
+                primary.Horizontal = _horizontalSpeed;
+                primary.Vertical = _verticalSpeed;
+            }
 
-            // update summary label for setup1
+            ApplyProfileSetup(_currentProfile, 1);
             UpdateSetupSummaryLabels();
 
             MessageBox.Show(
@@ -2425,9 +3776,14 @@ namespace MouseSliderApp
             _currentProfile.Horizontal2 = _horizontalSpeed;
             _currentProfile.Vertical2 = _verticalSpeed;
 
-            ApplyProfileSetup(_currentProfile, 2);
+            var secondary = _currentProfile.SelectedSecondaryWeapon;
+            if (secondary != null)
+            {
+                secondary.Horizontal = _horizontalSpeed;
+                secondary.Vertical = _verticalSpeed;
+            }
 
-            // update summary label for setup2
+            ApplyProfileSetup(_currentProfile, 2);
             UpdateSetupSummaryLabels();
 
             MessageBox.Show(
@@ -2440,10 +3796,43 @@ namespace MouseSliderApp
         private void ApplyProfileSetup(Profile profile, int setupIndex)
         {
             _currentSetupIndex = setupIndex;
-            _labelActiveSetup.Text = $"Active setup: {setupIndex}";
+            _labelActiveSetup.Text = setupIndex == 1
+                ? "Active setup: 1 (Primary)"
+                : "Active setup: 2 (Secondary)";
 
-            double h = setupIndex == 1 ? profile.Horizontal1 : profile.Horizontal2;
-            double v = setupIndex == 1 ? profile.Vertical1 : profile.Vertical2;
+            double h;
+            double v;
+
+            WeaponInfo? weapon = null;
+
+            if (setupIndex == 1)
+            {
+                weapon = profile.SelectedPrimaryWeapon;
+                if (weapon != null)
+                {
+                    h = weapon.Horizontal;
+                    v = weapon.Vertical;
+                }
+                else
+                {
+                    h = profile.Horizontal1;
+                    v = profile.Vertical1;
+                }
+            }
+            else
+            {
+                weapon = profile.SelectedSecondaryWeapon;
+                if (weapon != null)
+                {
+                    h = weapon.Horizontal;
+                    v = weapon.Vertical;
+                }
+                else
+                {
+                    h = profile.Horizontal2;
+                    v = profile.Vertical2;
+                }
+            }
 
             _horizontalSpeed = h;
             _verticalSpeed = v;
@@ -2464,7 +3853,68 @@ namespace MouseSliderApp
             if (_currentProfile != null && ReferenceEquals(profile, _currentProfile))
             {
                 UpdateSelectedProfileDetails();
+                UpdateWeaponUi();
             }
+        }
+
+        // ==========================================================
+        // Weapon selection logic
+        // ==========================================================
+        private void ChangeWeaponSelection(bool isPrimary, int delta)
+        {
+            if (_currentProfile == null)
+                return;
+
+            var profile = _currentProfile;
+            var list = isPrimary ? profile.PrimaryWeapons : profile.SecondaryWeapons;
+            if (list.Count == 0)
+                return;
+
+            if (isPrimary)
+            {
+                int idx = profile.SelectedPrimaryIndex;
+                idx = (idx + delta + list.Count) % list.Count;
+                profile.SelectedPrimaryIndex = idx;
+
+                if (_currentSetupIndex == 1)
+                    ApplyProfileSetup(profile, 1);
+            }
+            else
+            {
+                int idx = profile.SelectedSecondaryIndex;
+                idx = (idx + delta + list.Count) % list.Count;
+                profile.SelectedSecondaryIndex = idx;
+
+                if (_currentSetupIndex == 2)
+                    ApplyProfileSetup(profile, 2);
+            }
+
+            UpdateWeaponUi();
+            UpdateSetupSummaryLabels();
+        }
+
+        private void UpdateWeaponUi()
+        {
+            if (_labelPrimaryWeaponName == null || _labelSecondaryWeaponName == null)
+                return;
+
+            if (_currentProfile == null)
+            {
+                _labelPrimaryWeaponName.Text = "Primary weapon";
+                _labelSecondaryWeaponName.Text = "Secondary weapon";
+                LoadWeaponImage(_picturePrimaryWeapon, null);
+                LoadWeaponImage(_pictureSecondaryWeapon, null);
+                return;
+            }
+
+            var primary = _currentProfile.SelectedPrimaryWeapon;
+            var secondary = _currentProfile.SelectedSecondaryWeapon;
+
+            _labelPrimaryWeaponName.Text = primary?.Name ?? "Primary weapon";
+            _labelSecondaryWeaponName.Text = secondary?.Name ?? "Secondary weapon";
+
+            LoadWeaponImage(_picturePrimaryWeapon, primary?.ImageFileName);
+            LoadWeaponImage(_pictureSecondaryWeapon, secondary?.ImageFileName);
         }
 
         // ==========================================================
@@ -2657,7 +4107,6 @@ namespace MouseSliderApp
             }
         }
 
-
         private bool IsKeyPressed(Keys key)
         {
             if (key == Keys.None)
@@ -2712,6 +4161,5 @@ namespace MouseSliderApp
             INPUT[] inputs = { input };
             SendInput(1, inputs, Marshal.SizeOf(typeof(INPUT)));
         }
-
     }
 }
