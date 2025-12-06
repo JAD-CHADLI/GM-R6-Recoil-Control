@@ -2507,6 +2507,7 @@ namespace MouseSliderApp
                 castle.PrimaryWeapons.Add(new WeaponInfo("M1014", "W_M1014.png"));
                 castle.SecondaryWeapons.Add(new WeaponInfo("5.7 USG", "W_57USG.png"));
                 castle.SecondaryWeapons.Add(new WeaponInfo("Super Shorty", "W_SUPERSHORTY.png"));
+                castle.SecondaryWeapons.Add(new WeaponInfo("M45 MEUSOC", "W_M45MEUSOC.png"));
                 castle.SelectedPrimaryIndex = 0;
                 castle.SelectedSecondaryIndex = 0;
             }
@@ -2520,6 +2521,7 @@ namespace MouseSliderApp
                 pulse.PrimaryWeapons.Add(new WeaponInfo("M1014", "W_M1014.png"));
                 pulse.SecondaryWeapons.Add(new WeaponInfo("5.7 USG", "W_57USG.png"));
                 pulse.SecondaryWeapons.Add(new WeaponInfo("M45 MEUSOC", "W_M45MEUSOC.png"));
+                pulse.SecondaryWeapons.Add(new WeaponInfo("Reaper MK2", "W_REAPERMK2.png"));
                 pulse.SelectedPrimaryIndex = 0;
                 pulse.SelectedSecondaryIndex = 0;
             }
@@ -2549,6 +2551,7 @@ namespace MouseSliderApp
                 rook.PrimaryWeapons.Add(new WeaponInfo("SG-CQB", "W_SGCQB.png"));
                 rook.SecondaryWeapons.Add(new WeaponInfo("P9", "W_P9.png"));
                 rook.SecondaryWeapons.Add(new WeaponInfo("LFP586", "W_LFP586.png"));
+                rook.SecondaryWeapons.Add(new WeaponInfo("Reaper MK2", "W_REAPERMK2.png"));
                 rook.SelectedPrimaryIndex = 0;
                 rook.SelectedSecondaryIndex = 0;
             }
@@ -2575,6 +2578,7 @@ namespace MouseSliderApp
                 tachanka.PrimaryWeapons.Add(new WeaponInfo("9x19VSN", "W_9X19VSN.png"));
                 tachanka.SecondaryWeapons.Add(new WeaponInfo("PMM", "W_PMM.png"));
                 tachanka.SecondaryWeapons.Add(new WeaponInfo("GSh-18", "W_GSH18.png"));
+                tachanka.SecondaryWeapons.Add(new WeaponInfo("Bearing 9", "W_BEARING9.png"));
                 tachanka.SelectedPrimaryIndex = 0;
                 tachanka.SelectedSecondaryIndex = 0;
             }
@@ -2674,6 +2678,7 @@ namespace MouseSliderApp
                 lesion.PrimaryWeapons.Add(new WeaponInfo("T-5 SMG", "W_T5SMG.png"));
                 lesion.PrimaryWeapons.Add(new WeaponInfo("SIX12", "W_SIX12.png"));
                 lesion.SecondaryWeapons.Add(new WeaponInfo("Q-929", "W_Q929.png"));
+                lesion.SecondaryWeapons.Add(new WeaponInfo("Super Shorty", "W_SUPERSHORTY.png"));
                 lesion.SelectedPrimaryIndex = 0;
                 lesion.SelectedSecondaryIndex = 0;
             }
@@ -2737,6 +2742,7 @@ namespace MouseSliderApp
                 clash.PrimaryWeapons.Add(new WeaponInfo("CCE Shield", "W_CCESHIELD.png"));
                 clash.SecondaryWeapons.Add(new WeaponInfo("P-10C", "W_P10C.png"));
                 clash.SecondaryWeapons.Add(new WeaponInfo("SPSMG9", "W_SPSMG9.png"));
+                clash.SecondaryWeapons.Add(new WeaponInfo("Super Shorty", "W_SUPERSHORTY.png"));
                 clash.SelectedPrimaryIndex = 0;
                 clash.SelectedSecondaryIndex = 0;
             }
@@ -2762,7 +2768,6 @@ namespace MouseSliderApp
                 mozzie.PrimaryWeapons.Add(new WeaponInfo("Commando 9", "W_COMMANDO9.png"));
                 mozzie.PrimaryWeapons.Add(new WeaponInfo("P10 RONI", "W_P10RONI.png"));
                 mozzie.SecondaryWeapons.Add(new WeaponInfo("SDP 9mm", "W_SDP9MM.png"));
-                mozzie.SecondaryWeapons.Add(new WeaponInfo("Super Shorty", "W_SUPERSHORTY.png"));
                 mozzie.SelectedPrimaryIndex = 0;
                 mozzie.SelectedSecondaryIndex = 0;
             }
@@ -2801,6 +2806,7 @@ namespace MouseSliderApp
                 wamai.PrimaryWeapons.Add(new WeaponInfo("MP5K", "W_MP5K.png"));
                 wamai.SecondaryWeapons.Add(new WeaponInfo("Keratos .357", "W_KERATOS357.png"));
                 wamai.SecondaryWeapons.Add(new WeaponInfo("P12", "W_P12.png"));
+                wamai.SecondaryWeapons.Add(new WeaponInfo("Super Shorty", "W_SUPERSHORTY.png"));
                 wamai.SelectedPrimaryIndex = 0;
                 wamai.SelectedSecondaryIndex = 0;
             }
@@ -2814,6 +2820,7 @@ namespace MouseSliderApp
                 oryx.PrimaryWeapons.Add(new WeaponInfo("SPAS-12", "W_SPAS12.png"));
                 oryx.SecondaryWeapons.Add(new WeaponInfo("Bailiff 410", "W_BAILIFF410.png"));
                 oryx.SecondaryWeapons.Add(new WeaponInfo("USP40", "W_USP40.png"));
+                oryx.SecondaryWeapons.Add(new WeaponInfo("Reaper MK2", "W_REAPERMK2.png"));
                 oryx.SelectedPrimaryIndex = 0;
                 oryx.SelectedSecondaryIndex = 0;
             }
@@ -2823,9 +2830,10 @@ namespace MouseSliderApp
             {
                 melusi.PrimaryWeapons.Clear();
                 melusi.SecondaryWeapons.Clear();
-                melusi.PrimaryWeapons.Add(new WeaponInfo("T-5 SMG", "W_T5SMG.png"));
+                melusi.PrimaryWeapons.Add(new WeaponInfo("MP5K", "W_MP5K.png"));
                 melusi.PrimaryWeapons.Add(new WeaponInfo("Super 90", "W_SUPER90.png"));
                 melusi.SecondaryWeapons.Add(new WeaponInfo("RG15", "W_RG15.png"));
+                melusi.SecondaryWeapons.Add(new WeaponInfo("ITA12S", "W_ITA12S.png"));
                 melusi.SelectedPrimaryIndex = 0;
                 melusi.SelectedSecondaryIndex = 0;
             }
@@ -2851,6 +2859,7 @@ namespace MouseSliderApp
                 thunderbird.PrimaryWeapons.Add(new WeaponInfo("SPAS-15", "W_SPAS15.png"));
                 thunderbird.SecondaryWeapons.Add(new WeaponInfo("Q-929", "W_Q929.png"));
                 thunderbird.SecondaryWeapons.Add(new WeaponInfo("Bearing 9", "W_BEARING9.png"));
+                thunderbird.SecondaryWeapons.Add(new WeaponInfo("ITA12S", "W_ITA12S.png"));
                 thunderbird.SelectedPrimaryIndex = 0;
                 thunderbird.SelectedSecondaryIndex = 0;
             }
