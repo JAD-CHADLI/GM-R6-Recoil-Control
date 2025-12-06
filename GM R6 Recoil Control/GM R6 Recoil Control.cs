@@ -1819,17 +1819,20 @@ namespace MouseSliderApp
                 ForeColor = TextMuted,
                 Font = new Font("Segoe UI", 11F, FontStyle.Regular),
                 Text =
-                    "1. Choose a side (Attackers / Defenders) at the top.\n" +
-                    "2. Use the search box on the left or scroll to find the operator you want.\n" +
-                    "3. Click a profile card to select it. Press \"Modify\" on a profile to open the settings page.\n" +
-                    "4. In the Movement card, set Horizontal and Vertical speed with the sliders or by typing values.\n" +
-                    "5. Choose a key for Setup 1 and Setup 2, then click \"Save 1\" / \"Save 2\" to store each setup for this profile.\n" +
-                    "6. Back on the main page, press \"Start\" to arm the tool.\n" +
-                    "   Hold RIGHT mouse button, then press LEFT mouse button to start the movement.\n" +
-                    "7. Press your setup keys in-game to quickly switch between Setup 1 and Setup 2 for the selected profile.\n" +
-                    "8. Use \"Reset profile\" to clear settings for the current operator, or \"RESET ALL\" on this page to clear all profiles.\n" +
-                    "9. Use \"Export settings\" to save your current config to a .json file and share it with friends.\n" +
-                    "   They can use \"Import settings\" to load that file."
+        "1. Choose a side (Attackers / Defenders) at the top.\n" +
+        "2. Use the search box or scroll to find the operator you want, then click its card to select it.\n" +
+        "3. Press \"Modify\" on a profile to open the settings page.\n" +
+        "4. In the Weapons card, use the arrows to choose your primary and secondary weapons.\n" +
+        "5. In the Movement card, set Horizontal and Vertical speed. These values are saved per weapon.\n" +
+        "6. In Setups & Keybinds:\n" +
+        "   • Choose a key for Setup 1 (Primary) and click \"Save 1\" to store recoil for the selected primary weapon.\n" +
+        "   • Choose a key for Setup 2 (Secondary) and click \"Save 2\" to store recoil for the selected secondary weapon.\n" +
+        "   • Maestro also has an extra Setup 3 (camera) with its own key and speeds.\n" +
+        "7. On this Tutorial page, set a global Start / Stop key if you want, or use the \"Start\" button on the main page.\n" +
+        "8. When the tool is active: hold RIGHT mouse button, then press and hold LEFT mouse button to start the recoil movement.\n" +
+        "9. In-game, press your setup keys to switch between Setup 1 / Setup 2 (and Setup 3 on Maestro) for the selected operator.\n" +
+        "10. Use \"Reset profile\" to clear settings for the current operator, or \"RESET ALL\" on this page to clear all profiles.\n" +
+        "11. Use \"Export settings\" to save your config to a .json file, and \"Import settings\" to load one (for example from a friend)."
             };
 
             var toggleLabel = new Label
