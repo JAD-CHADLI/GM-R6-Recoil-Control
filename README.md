@@ -2,7 +2,6 @@
 
 ![GM R6 Recoil Control](GM%20R6%20Recoil%20Control/Images/readme-banner.png)
 
-![GM R6 Recoil Control](GM%20R6%20Recoil%20Control/Images/readme1-banner.png)
 
 A Windows desktop tool for creating **per-operator, per-weapon recoil profiles** for Rainbow Six Siege.  
 You can save multiple setups, bind them to keys, and trigger smooth mouse movements using a **Right-Click + Left-Click** combo – now with a **global Start/Stop hotkey** and extra features.
