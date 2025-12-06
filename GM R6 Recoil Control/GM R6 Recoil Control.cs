@@ -91,6 +91,17 @@ namespace MouseSliderApp
         private Label _labelSetup1Summary = null!;
         private Label _labelSetup2Summary = null!;
 
+        // NEW: Setup 3 (Maestro only)
+        private Label _labelSetup3 = null!;
+        private TextBox _textKey3 = null!;
+        private Button _buttonSetKey3 = null!;
+        private Button _buttonSaveSetup3 = null!;
+        private Label _labelSetup3Summary = null!;
+
+        // NEW: key state for Setup 3
+        private bool _key3WasDown;
+
+
         // ====== Profile image (Settings page) ======
         private PictureBox _pictureProfile = null!;
         private Label _labelEditingProfile = null!;
@@ -165,6 +176,12 @@ namespace MouseSliderApp
             public double Vertical2 { get; set; }
             public Keys Key2 { get; set; } = Keys.None;
 
+            // NEW: Setup 3 (used only for Maestro)
+            public double Horizontal3 { get; set; }
+            public double Vertical3 { get; set; }
+            public Keys Key3 { get; set; } = Keys.None;
+
+
             // New: weapon lists
             public List<WeaponInfo> PrimaryWeapons { get; } = new();
             public List<WeaponInfo> SecondaryWeapons { get; } = new();
@@ -193,6 +210,11 @@ namespace MouseSliderApp
                 Vertical1 = 0.0;
                 Horizontal2 = 0.0;
                 Vertical2 = 0.0;
+
+                // NEW
+                Horizontal3 = 0.0;
+                Vertical3 = 0.0;
+
 
                 SelectedPrimaryIndex = 0;
                 SelectedSecondaryIndex = 0;
@@ -251,6 +273,12 @@ namespace MouseSliderApp
             public double Vertical2 { get; set; }
             public Keys Key1 { get; set; }
             public Keys Key2 { get; set; }
+
+            // NEW: Setup 3
+            public double Horizontal3 { get; set; }
+            public double Vertical3 { get; set; }
+            public Keys Key3 { get; set; }
+
 
             // NEW: which weapons are selected
             public int SelectedPrimaryIndex { get; set; }
@@ -346,6 +374,19 @@ namespace MouseSliderApp
             int attrSize);
 
         private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+
+
+        private void UpdateSetup3Visibility()
+        {
+            bool isMaestro = _currentProfile != null &&
+                             string.Equals(_currentProfile.Name, "Maestro", StringComparison.OrdinalIgnoreCase);
+
+            if (_labelSetup3 != null) _labelSetup3.Visible = isMaestro;
+            if (_textKey3 != null) _textKey3.Visible = isMaestro;
+            if (_buttonSetKey3 != null) _buttonSetKey3.Visible = isMaestro;
+            if (_buttonSaveSetup3 != null) _buttonSaveSetup3.Visible = isMaestro;
+            if (_labelSetup3Summary != null) _labelSetup3Summary.Visible = isMaestro;
+        }
 
         private void TryEnableDarkTitleBar()
         {
@@ -1327,6 +1368,7 @@ namespace MouseSliderApp
 
             _buttonSetKey1 = CreateFlatButton("Set Key 1", 90, 28);
             _buttonSetKey1.Location = new Point(300, 55);  // was 260
+            _buttonSetKey1.Click += (s, e) => StartCapturingKey(1);
 
             _buttonSaveSetup1 = CreateFlatButton("Save 1", 80, 28);
             _buttonSaveSetup1.Location = new Point(400, 55); // was 360
@@ -1353,11 +1395,40 @@ namespace MouseSliderApp
 
             _buttonSetKey2 = CreateFlatButton("Set Key 2", 90, 28);
             _buttonSetKey2.Location = new Point(300, 95);  // was 260
+            _buttonSetKey2.Click += (s, e) => StartCapturingKey(2);
 
             _buttonSaveSetup2 = CreateFlatButton("Save 2", 80, 28);
             _buttonSaveSetup2.Location = new Point(400, 95); // was 360
             _buttonSaveSetup2.Click += ButtonSaveSetup2_Click;
             _toolTip.SetToolTip(_buttonSaveSetup2, "Save current speeds as Setup 2.");
+
+
+            // NEW: Setup 3 (Maestro only)
+            _labelSetup3 = new Label
+            {
+                AutoSize = true,
+                Text = "Setup 3 (Maestro Camera):",
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                Location = new Point(10, 140)
+            };
+
+            _textKey3 = new TextBox
+            {
+                ReadOnly = true,
+                Width = 80,
+                Location = new Point(210, 137),
+                Text = "None"
+            };
+
+            _buttonSetKey3 = CreateFlatButton("Set Key 3", 90, 28);
+            _buttonSetKey3.Location = new Point(300, 135);
+            _buttonSetKey3.Click += (s, e) => StartCapturingKey(3);
+
+            _buttonSaveSetup3 = CreateFlatButton("Save 3", 80, 28);
+            _buttonSaveSetup3.Location = new Point(400, 135);
+            _buttonSaveSetup3.Click += ButtonSaveSetup3_Click;
+            _toolTip.SetToolTip(_buttonSaveSetup3, "Save current speeds as Setup 3 (Maestro only).");
+
 
             _labelSetup1Summary = new Label
             {
@@ -1389,25 +1460,55 @@ namespace MouseSliderApp
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
 
+            _labelSetup3Summary = new Label
+            {
+                AutoSize = false,
+                ForeColor = Color.Cyan,
+                BackColor = Color.FromArgb(31, 41, 55),           // slightly different shade
+                Font = new Font("Segoe UI", 10.5F, FontStyle.Bold),
+                Location = new Point(150, 232),
+                Width = _setupCard.Width - 20,
+                Height = 26,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(8, 4, 8, 4),
+                Text = "Setup 3 – H = 0.000, V = 0.000",
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+
 
 
             ApplyRoundedCorners(_labelSetup1Summary, 6);
             ApplyRoundedCorners(_labelSetup2Summary, 6);
+            ApplyRoundedCorners(_labelSetup3Summary, 6);
 
 
             _setupCard.Controls.Add(setupTitle);
             _setupCard.Controls.Add(setupUnderline);
             _setupCard.Controls.Add(_labelActiveSetup);
+
+            // Setup 1
             _setupCard.Controls.Add(_labelSetup1);
             _setupCard.Controls.Add(_textKey1);
             _setupCard.Controls.Add(_buttonSetKey1);
             _setupCard.Controls.Add(_buttonSaveSetup1);
+
+            // Setup 2
             _setupCard.Controls.Add(_labelSetup2);
             _setupCard.Controls.Add(_textKey2);
             _setupCard.Controls.Add(_buttonSetKey2);
             _setupCard.Controls.Add(_buttonSaveSetup2);
+
+            // ✨ NEW: Setup 3 controls
+            _setupCard.Controls.Add(_labelSetup3);
+            _setupCard.Controls.Add(_textKey3);
+            _setupCard.Controls.Add(_buttonSetKey3);
+            _setupCard.Controls.Add(_buttonSaveSetup3);
+
+            // Summary strips
             _setupCard.Controls.Add(_labelSetup1Summary);
             _setupCard.Controls.Add(_labelSetup2Summary);
+            _setupCard.Controls.Add(_labelSetup3Summary);
+
 
             settingsLayout.Controls.Add(operatorFrame);
             settingsLayout.Controls.Add(operatorCaption);
@@ -1501,7 +1602,8 @@ namespace MouseSliderApp
                     rightX,
                     setupsTop,
                     rightWidth,
-                    Math.Max(170, setupsHeight));
+                    Math.Max(280, setupsHeight));
+
             }
 
             // Layout once now and whenever the panel size changes
@@ -3054,7 +3156,7 @@ namespace MouseSliderApp
                         Category = p.Category,
                         Index = p.Index,
 
-                        // old per-profile values (still used)
+                        // old (still used)
                         Horizontal1 = p.Horizontal1,
                         Vertical1 = p.Vertical1,
                         Horizontal2 = p.Horizontal2,
@@ -3062,10 +3164,16 @@ namespace MouseSliderApp
                         Key1 = p.Key1,
                         Key2 = p.Key2,
 
-                        // NEW: which weapon is selected
+                        // NEW: Setup 3
+                        Horizontal3 = p.Horizontal3,
+                        Vertical3 = p.Vertical3,
+                        Key3 = p.Key3,
+
+                        // NEW: which weapons are selected
                         SelectedPrimaryIndex = p.SelectedPrimaryIndex,
                         SelectedSecondaryIndex = p.SelectedSecondaryIndex
                     };
+
 
                     // --- Save recoil for each PRIMARY weapon ---
                     for (int i = 0; i < p.PrimaryWeapons.Count; i++)
@@ -3137,6 +3245,12 @@ namespace MouseSliderApp
                     p.Vertical2 = data.Vertical2;
                     p.Key1 = data.Key1;
                     p.Key2 = data.Key2;
+
+                    // NEW: Setup 3 (defaults will be 0 / None if old file)
+                    p.Horizontal3 = data.Horizontal3;
+                    p.Vertical3 = data.Vertical3;
+                    p.Key3 = data.Key3;
+
 
                     // --- NEW: selected weapon indices ---
                     p.SelectedPrimaryIndex = data.SelectedPrimaryIndex;
@@ -3566,8 +3680,11 @@ namespace MouseSliderApp
             {
                 _labelSetup1Summary.Text = "Primary: (no values)";
                 _labelSetup2Summary.Text = "Secondary: (no values)";
+                if (_labelSetup3Summary != null)
+                    _labelSetup3Summary.Visible = false;
                 return;
             }
+
 
             var primary = _currentProfile.SelectedPrimaryWeapon;
             var secondary = _currentProfile.SelectedSecondaryWeapon;
@@ -3596,6 +3713,22 @@ namespace MouseSliderApp
                     $"SECONDARY – H = {_currentProfile.Horizontal2:0.000}, V = {_currentProfile.Vertical2:0.000}";
             }
 
+            // NEW: Setup 3 summary (Maestro only, not tied to weapon)
+            if (_labelSetup3Summary != null)
+            {
+                if (string.Equals(_currentProfile.Name, "Maestro", StringComparison.OrdinalIgnoreCase))
+                {
+                    _labelSetup3Summary.Visible = true;
+                    _labelSetup3Summary.Text =
+                        $"Setup 3 (Maestro): H = {_currentProfile.Horizontal3:0.000}, V = {_currentProfile.Vertical3:0.000}";
+                }
+                else
+                {
+                    _labelSetup3Summary.Visible = false;
+                }
+            }
+
+
         }
 
 
@@ -3606,6 +3739,13 @@ namespace MouseSliderApp
 
             _textKey1.Text = profile.Key1 == Keys.None ? "None" : profile.Key1.ToString();
             _textKey2.Text = profile.Key2 == Keys.None ? "None" : profile.Key2.ToString();
+
+            if (_textKey3 != null)
+                _textKey3.Text = profile.Key3 == Keys.None ? "None" : profile.Key3.ToString();
+
+            // Show/hide Setup 3 depending on Maestro
+            UpdateSetup3Visibility();
+
 
             // make sure indexes are in range
             if (profile.PrimaryWeapons.Count > 0 &&
@@ -3632,6 +3772,12 @@ namespace MouseSliderApp
             profile.Vertical2 = 0.0;
             profile.Key1 = Keys.None;
             profile.Key2 = Keys.None;
+
+            // NEW
+            profile.Horizontal3 = 0.0;
+            profile.Vertical3 = 0.0;
+            profile.Key3 = Keys.None;
+
 
             profile.SelectedPrimaryIndex = 0;
             profile.SelectedSecondaryIndex = 0;
@@ -3682,6 +3828,8 @@ namespace MouseSliderApp
             _labelActiveSetup.Text = "Active setup: 1 (Primary)";
             _textKey1.Text = "None";
             _textKey2.Text = "None";
+            if (_textKey3 != null) _textKey3.Text = "None";
+
 
             if (_currentProfile != null)
             {
@@ -3823,6 +3971,8 @@ namespace MouseSliderApp
 
             _textKey1.Text = "None";
             _textKey2.Text = "None";
+            if (_textKey3 != null) _textKey3.Text = "None";
+
 
             UpdateSetupSummaryLabels();
             UpdateWeaponUi();
@@ -3860,6 +4010,37 @@ namespace MouseSliderApp
             {
             }
         }
+
+        private void ButtonSaveSetup3_Click(object? sender, EventArgs e)
+        {
+            if (_currentProfile == null ||
+                !string.Equals(_currentProfile.Name, "Maestro", StringComparison.OrdinalIgnoreCase))
+            {
+                MessageBox.Show(
+                    "Setup 3 is only available for Maestro.",
+                    "Setup 3",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+                return;
+            }
+
+            ApplyHorizontalText();
+            ApplyVerticalText();
+
+            _currentProfile.Horizontal3 = _horizontalSpeed;
+            _currentProfile.Vertical3 = _verticalSpeed;
+
+            ApplyProfileSetup(_currentProfile, 3);
+            UpdateSetupSummaryLabels();
+            SaveProfilesToFile();
+
+            MessageBox.Show(
+                $"Saved Setup 3 for {_currentProfile.Name}",
+                "Setup 3 saved",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
+
 
         private void LoadThumbnailImage(PictureBox target, string? imageFileName)
         {
@@ -3947,8 +4128,11 @@ namespace MouseSliderApp
 
             if (setupIndex == 1)
                 _textKey1.Text = "Press key...";
-            else
+            else if (setupIndex == 2)
                 _textKey2.Text = "Press key...";
+            else if (setupIndex == 3 && _textKey3 != null)
+                _textKey3.Text = "Press key...";
+
         }
 
         private void Form1_KeyDown(object? sender, KeyEventArgs e)
@@ -3968,9 +4152,17 @@ namespace MouseSliderApp
                 _currentProfile.Key2 = key;
                 _textKey2.Text = key.ToString();
             }
+            else if (_capturingKeyForSetup == 3)
+            {
+                _currentProfile.Key3 = key;
+                if (_textKey3 != null)
+                    _textKey3.Text = key.ToString();
+            }
+
 
             _capturingKeyForSetup = 0;
             e.Handled = true;
+
         }
 
         // ==========================================================
@@ -4055,9 +4247,17 @@ namespace MouseSliderApp
         private void ApplyProfileSetup(Profile profile, int setupIndex)
         {
             _currentSetupIndex = setupIndex;
-            _labelActiveSetup.Text = setupIndex == 1
-                ? "Active setup: 1 (Primary)"
-                : "Active setup: 2 (Secondary)";
+
+            string activeLabel;
+            if (setupIndex == 1)
+                activeLabel = "Active setup: 1 (Primary)";
+            else if (setupIndex == 2)
+                activeLabel = "Active setup: 2 (Secondary)";
+            else
+                activeLabel = "Active setup: 3 (Maestro)";
+
+            _labelActiveSetup.Text = activeLabel;
+
 
             double h;
             double v;
@@ -4065,12 +4265,9 @@ namespace MouseSliderApp
 
             if (setupIndex == 1)
             {
-                // 1) start with the values that are saved to JSON
                 h = profile.Horizontal1;
                 v = profile.Vertical1;
 
-                // 2) if the selected PRIMARY weapon has its own values
-                //    and they are not both 0, use those instead
                 weapon = profile.SelectedPrimaryWeapon;
                 if (weapon != null && (weapon.Horizontal != 0.0 || weapon.Vertical != 0.0))
                 {
@@ -4078,14 +4275,11 @@ namespace MouseSliderApp
                     v = weapon.Vertical;
                 }
             }
-            else
+            else if (setupIndex == 2)
             {
-                // 1) start with the values that are saved to JSON
                 h = profile.Horizontal2;
                 v = profile.Vertical2;
 
-                // 2) if the selected SECONDARY weapon has its own values
-                //    and they are not both 0, use those instead
                 weapon = profile.SelectedSecondaryWeapon;
                 if (weapon != null && (weapon.Horizontal != 0.0 || weapon.Vertical != 0.0))
                 {
@@ -4093,6 +4287,12 @@ namespace MouseSliderApp
                     v = weapon.Vertical;
                 }
             }
+            else // Setup 3 (Maestro-only, no weapon override)
+            {
+                h = profile.Horizontal3;
+                v = profile.Vertical3;
+            }
+
 
             _horizontalSpeed = h;
             _verticalSpeed = v;
@@ -4325,7 +4525,14 @@ namespace MouseSliderApp
             {
                 CheckKeybind(_currentProfile.Key1, ref _key1WasDown, 1);
                 CheckKeybind(_currentProfile.Key2, ref _key2WasDown, 2);
+
+                // NEW: Setup 3 only for Maestro
+                if (string.Equals(_currentProfile.Name, "Maestro", StringComparison.OrdinalIgnoreCase))
+                {
+                    CheckKeybind(_currentProfile.Key3, ref _key3WasDown, 3);
+                }
             }
+
 
             // GLOBAL mouse state (works even when game is fullscreen)
             bool rightDown = IsKeyPressed(Keys.RButton);
