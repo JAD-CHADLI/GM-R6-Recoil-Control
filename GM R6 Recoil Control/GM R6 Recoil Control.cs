@@ -101,6 +101,14 @@ namespace MouseSliderApp
         // NEW: key state for Setup 3
         private bool _key3WasDown;
 
+        // Global Start/Stop hotkey (stored in a hidden "global" profile)
+        private Profile? _globalProfile;
+        private TextBox _textToggleKey = null!;
+        private Button _buttonSetToggleKey = null!;
+        private bool _capturingToggleKey;
+        private bool _toggleKeyWasDown;
+
+
 
         // ====== Profile image (Settings page) ======
         private PictureBox _pictureProfile = null!;
@@ -361,6 +369,7 @@ namespace MouseSliderApp
             CreateProfiles();
             InitializeWeapons();      // new
             LoadProfilesFromFile();
+            SyncToggleKeyUi();
             ShowCategory("A");
             ShowProfilesPage();
         }
@@ -1464,9 +1473,9 @@ namespace MouseSliderApp
             {
                 AutoSize = false,
                 ForeColor = Color.Cyan,
-                BackColor = Color.FromArgb(31, 41, 55),           // slightly different shade
+                BackColor = Color.FromArgb(31, 41, 55),
                 Font = new Font("Segoe UI", 10.5F, FontStyle.Bold),
-                Location = new Point(150, 232),
+                Location = new Point(150, 264),   // ⬅️ different Y than Setup 2
                 Width = _setupCard.Width - 20,
                 Height = 26,
                 TextAlign = ContentAlignment.MiddleLeft,
@@ -1474,6 +1483,7 @@ namespace MouseSliderApp
                 Text = "Setup 3 – H = 0.000, V = 0.000",
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
+
 
 
 
@@ -1822,6 +1832,28 @@ namespace MouseSliderApp
                     "   They can use \"Import settings\" to load that file."
             };
 
+            var toggleLabel = new Label
+            {
+                AutoSize = true,
+                Text = "Start / Stop key:",
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                ForeColor = Color.White
+            };
+
+            _textToggleKey = new TextBox
+            {
+                ReadOnly = true,
+                Width = 80,
+                Text = "None"
+            };
+
+            _buttonSetToggleKey = CreateFlatButton("Set key", 80, 30);
+            _buttonSetToggleKey.Click += (s, e) => StartCapturingToggleKey();
+            _toolTip.SetToolTip(_buttonSetToggleKey, "Choose a hotkey that toggles Start / Stop.");
+
+
+
+
             layout.Controls.Add(tutorialTitle);
             layout.Controls.Add(tutorialBody);
 
@@ -1849,6 +1881,11 @@ namespace MouseSliderApp
             _buttonResetAll.Click += ButtonResetAll_Click;
             _toolTip.SetToolTip(_buttonResetAll, "Reset speeds and keybinds for all profiles.");
             content.Controls.Add(_buttonResetAll);
+
+            content.Controls.Add(toggleLabel);
+            content.Controls.Add(_textToggleKey);
+            content.Controls.Add(_buttonSetToggleKey);
+
 
             // NEW: Export / Import buttons (bottom-left)
             _buttonExportSettings = CreateFlatButton("Export settings", 140, 30);
@@ -1883,7 +1920,21 @@ namespace MouseSliderApp
                 _buttonImportSettings.Location = new Point(
                     _buttonExportSettings.Right + 10,
                     _buttonExportSettings.Top);
+
+                // 🔽 bottom-center: Start / Stop key controls
+                int toggleY = content.ClientSize.Height - _buttonResetAll.Height - margin;
+                int totalToggleWidth = toggleLabel.Width + 8 + _textToggleKey.Width + 8 + _buttonSetToggleKey.Width;
+                int toggleX = (content.ClientSize.Width - totalToggleWidth) / 2;
+
+                if (toggleX < margin) toggleX = margin;
+
+                toggleLabel.Location = new Point(toggleX, toggleY + 5);
+                _textToggleKey.Location = new Point(toggleLabel.Right + 8, toggleY + 2);
+                _buttonSetToggleKey.Location = new Point(_textToggleKey.Right + 8, toggleY);
             };
+
+
+
 
             // Initial positioning
             CenterInnerPanel(layout, content);
@@ -2054,6 +2105,18 @@ namespace MouseSliderApp
             ShowPage(_pageAbout);
         }
 
+        private void StartCapturingToggleKey()
+        {
+            _capturingToggleKey = true;
+            _capturingKeyForSetup = 0;
+            if (_textToggleKey != null)
+                _textToggleKey.Text = "Press key...";
+
+            // make sure the form receives the KeyDown event
+            ActiveControl = this;
+        }
+
+
         private void ShowTutorialPage()
         {
             ShowPage(_pageTutorial);
@@ -2148,6 +2211,11 @@ namespace MouseSliderApp
             _profiles.Add(new Profile("B", 34, "Tubarão", "B_Tubarao.png"));
             _profiles.Add(new Profile("B", 35, "Skopós", "B_Skopos.png"));
             _profiles.Add(new Profile("B", 37, "Denari", "B_Denari.png"));
+
+            // Hidden global profile used only to store global hotkey etc.
+            _globalProfile = new Profile("G", 0, "GlobalSettings", null);
+            _profiles.Add(_globalProfile);
+
         }
 
         // ==========================================================
@@ -3460,6 +3528,16 @@ namespace MouseSliderApp
             return newCard;
         }
 
+        private void SyncToggleKeyUi()
+        {
+            if (_textToggleKey == null || _globalProfile == null)
+                return;
+
+            var key = _globalProfile.Key1;
+            _textToggleKey.Text = key == Keys.None ? "None" : key.ToString();
+        }
+
+
         private Panel CreateProfileCard(Profile profile)
         {
             var card = new Panel
@@ -3853,7 +3931,21 @@ namespace MouseSliderApp
                 "Reset complete",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
+
+            foreach (var p in _profiles)
+            {
+                ResetProfileData(p);
+            }
+
+            // ...
+
+            // Make sure the tutorial Start / Stop textbox updates too
+            SyncToggleKeyUi();
+
+
         }
+
+
 
         private void ButtonExportSettings_Click(object? sender, EventArgs e)
         {
@@ -3922,11 +4014,15 @@ namespace MouseSliderApp
                     // Refresh UI (will re-select the first profile of current side)
                     ShowCategory(_currentCategory);
 
+                    // 🔽 update Start/Stop key textbox from global profile
+                    SyncToggleKeyUi();
+
                     MessageBox.Show(
                         "Settings imported successfully.",
                         "Import settings",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Information);
+
                 }
             }
             catch (Exception ex)
@@ -4137,6 +4233,29 @@ namespace MouseSliderApp
 
         private void Form1_KeyDown(object? sender, KeyEventArgs e)
         {
+            // 🔽 First: capture the global toggle key if requested
+            if (_capturingToggleKey)
+            {
+                if (_globalProfile != null)
+                {
+                    _globalProfile.Key1 = e.KeyCode;
+                }
+
+                if (_textToggleKey != null)
+                {
+                    _textToggleKey.Text = e.KeyCode.ToString();
+                }
+
+                _capturingToggleKey = false;
+
+                // persist it so it survives restart / export
+                SaveProfilesToFile();
+
+                e.Handled = true;
+                return;
+            }
+
+            // Existing logic for setups 1/2/3
             if (_capturingKeyForSetup == 0 || _currentProfile == null)
                 return;
 
@@ -4159,11 +4278,10 @@ namespace MouseSliderApp
                     _textKey3.Text = key.ToString();
             }
 
-
             _capturingKeyForSetup = 0;
             e.Handled = true;
-
         }
+
 
         // ==========================================================
         // Save setups for current profile
@@ -4498,6 +4616,11 @@ namespace MouseSliderApp
         // ==========================================================
         private void ButtonStart_Click(object? sender, EventArgs e)
         {
+            ToggleActive();
+        }
+
+        private void ToggleActive()
+        {
             _isActive = !_isActive;
 
             if (_isActive)
@@ -4518,8 +4641,31 @@ namespace MouseSliderApp
             UpdateActiveBadges();
         }
 
+
+        private void CheckToggleKey(Keys key, ref bool wasDown)
+        {
+            if (key == Keys.None)
+                return;
+
+            bool isDown = IsKeyPressed(key);
+
+            if (isDown && !wasDown)
+            {
+                ToggleActive();
+            }
+
+            wasDown = isDown;
+        }
+
         private void MovementTimer_Tick(object? sender, EventArgs e)
         {
+
+            // 🔽 First: global toggle hotkey (from hidden profile)
+            if (_globalProfile != null)
+            {
+                CheckToggleKey(_globalProfile.Key1, ref _toggleKeyWasDown);
+            }
+
             // Handle setup keybinds globally
             if (_currentProfile != null)
             {
