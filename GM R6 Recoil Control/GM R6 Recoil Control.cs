@@ -41,6 +41,8 @@ namespace MouseSliderApp
         private Button _buttonStart = null!;
         private Button _buttonResetAll = null!;   // now only used in Tutorial header
         private Button _buttonAbout = null!;
+        private Button _buttonExportSettings = null!;
+        private Button _buttonImportSettings = null!;
         private Button _buttonTutorial = null!;
 
         // movement + setup "cards"
@@ -112,6 +114,10 @@ namespace MouseSliderApp
 
         private const double SliderScale = 100.0;
         private const int MovementTimerIntervalMs = 20;
+        // NEW
+        private const double HorizontalStrengthMultiplier = 1.0;  // 1.0 = unchanged
+        private const double VerticalStrengthMultiplier = 2;  // 1.5x stronger vertical, for example
+
         private const int HorizontalTrackBarMin = -10000;
         private const int HorizontalTrackBarMax = 10000;
         private const int VerticalTrackBarMin = 0;
@@ -221,17 +227,39 @@ namespace MouseSliderApp
             TryEnableDarkTitleBar();
         }
 
+        private class WeaponData
+        {
+            // "Primary" or "Secondary"
+            public string Slot { get; set; } = "";
+
+            // Index in the PrimaryWeapons / SecondaryWeapons list
+            public int Index { get; set; }
+
+            public double Horizontal { get; set; }
+            public double Vertical { get; set; }
+        }
+
         private class ProfileData
         {
             public string Category { get; set; } = "";
             public int Index { get; set; }
+
+            // old (still used)
             public double Horizontal1 { get; set; }
             public double Vertical1 { get; set; }
             public double Horizontal2 { get; set; }
             public double Vertical2 { get; set; }
             public Keys Key1 { get; set; }
             public Keys Key2 { get; set; }
+
+            // NEW: which weapons are selected
+            public int SelectedPrimaryIndex { get; set; }
+            public int SelectedSecondaryIndex { get; set; }
+
+            // NEW: all weapon recoil values
+            public List<WeaponData> Weapons { get; set; } = new();
         }
+
 
         private readonly List<Profile> _profiles = new();
         private readonly Dictionary<Profile, Panel> _profileCardCache = new(); // cache cards
@@ -1284,7 +1312,8 @@ namespace MouseSliderApp
             _labelSetup1 = new Label
             {
                 AutoSize = true,
-                Text = "Setup 1 key (Primary):",
+                Text = "PRIMARY – Setup 1 key:",
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
                 Location = new Point(10, 60)
             };
 
@@ -1292,23 +1321,25 @@ namespace MouseSliderApp
             {
                 ReadOnly = true,
                 Width = 80,
-                Location = new Point(170, 57),   // was 140
+                Location = new Point(210, 57),   // was 170
                 Text = "None"
             };
 
             _buttonSetKey1 = CreateFlatButton("Set Key 1", 90, 28);
-            _buttonSetKey1.Location = new Point(260, 55);  // was 230
+            _buttonSetKey1.Location = new Point(300, 55);  // was 260
 
             _buttonSaveSetup1 = CreateFlatButton("Save 1", 80, 28);
-            _buttonSaveSetup1.Location = new Point(360, 55); // was 330
+            _buttonSaveSetup1.Location = new Point(400, 55); // was 360
 
             _buttonSaveSetup1.Click += ButtonSaveSetup1_Click;
             _toolTip.SetToolTip(_buttonSaveSetup1, "Save current speeds as Setup 1.");
 
+
             _labelSetup2 = new Label
             {
                 AutoSize = true,
-                Text = "Setup 2 key (Secondary):",
+                Text = "SECONDARY – Setup 2 key:",
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
                 Location = new Point(10, 100)
             };
 
@@ -1316,33 +1347,53 @@ namespace MouseSliderApp
             {
                 ReadOnly = true,
                 Width = 80,
-                Location = new Point(170, 97),   // was 140
+                Location = new Point(210, 97),   // was 170
                 Text = "None"
             };
 
             _buttonSetKey2 = CreateFlatButton("Set Key 2", 90, 28);
-            _buttonSetKey2.Location = new Point(260, 95);  // was 230
+            _buttonSetKey2.Location = new Point(300, 95);  // was 260
 
             _buttonSaveSetup2 = CreateFlatButton("Save 2", 80, 28);
-            _buttonSaveSetup2.Location = new Point(360, 95); // was 330
+            _buttonSaveSetup2.Location = new Point(400, 95); // was 360
             _buttonSaveSetup2.Click += ButtonSaveSetup2_Click;
             _toolTip.SetToolTip(_buttonSaveSetup2, "Save current speeds as Setup 2.");
 
             _labelSetup1Summary = new Label
             {
-                AutoSize = true,
-                ForeColor = TextMuted,
-                Location = new Point(10, 140),
-                Text = "Primary: H = 0.000, V = 0.000"
+                AutoSize = false,
+                ForeColor = Color.Gold,
+                BackColor = Color.FromArgb(31, 41, 55),           // darker strip
+                Font = new Font("Segoe UI", 10.5F, FontStyle.Bold),
+                Location = new Point(150, 200),
+                Width = _setupCard.Width - 20,
+                Height = 26,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(8, 4, 8, 4),
+                Text = "PRIMARY – H = 0.000, V = 0.000",
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
 
             _labelSetup2Summary = new Label
             {
-                AutoSize = true,
-                ForeColor = TextMuted,
-                Location = new Point(10, 160),
-                Text = "Secondary: H = 0.000, V = 0.000"
+                AutoSize = false,
+                ForeColor = Color.Cyan,
+                BackColor = Color.FromArgb(31, 41, 55),           // slightly different shade
+                Font = new Font("Segoe UI", 10.5F, FontStyle.Bold),
+                Location = new Point(150, 232),
+                Width = _setupCard.Width - 20,
+                Height = 26,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(8, 4, 8, 4),
+                Text = "SECONDARY – H = 0.000, V = 0.000",
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
+
+
+
+            ApplyRoundedCorners(_labelSetup1Summary, 6);
+            ApplyRoundedCorners(_labelSetup2Summary, 6);
+
 
             _setupCard.Controls.Add(setupTitle);
             _setupCard.Controls.Add(setupUnderline);
@@ -1664,7 +1715,9 @@ namespace MouseSliderApp
                     "6. Back on the main page, press \"Start\" to arm the tool.\n" +
                     "   Hold RIGHT mouse button, then press LEFT mouse button to start the movement.\n" +
                     "7. Press your setup keys in-game to quickly switch between Setup 1 and Setup 2 for the selected profile.\n" +
-                    "8. Use \"Reset profile\" to clear settings for the current operator, or \"RESET ALL\" on this page to clear all profiles."
+                    "8. Use \"Reset profile\" to clear settings for the current operator, or \"RESET ALL\" on this page to clear all profiles.\n" +
+                    "9. Use \"Export settings\" to save your current config to a .json file and share it with friends.\n" +
+                    "   They can use \"Import settings\" to load that file."
             };
 
             layout.Controls.Add(tutorialTitle);
@@ -1695,26 +1748,61 @@ namespace MouseSliderApp
             _toolTip.SetToolTip(_buttonResetAll, "Reset speeds and keybinds for all profiles.");
             content.Controls.Add(_buttonResetAll);
 
-            // Center tutorial text and keep RESET ALL at bottom-right
+            // NEW: Export / Import buttons (bottom-left)
+            _buttonExportSettings = CreateFlatButton("Export settings", 140, 30);
+            _buttonImportSettings = CreateFlatButton("Import settings", 140, 30);
+
+            _buttonExportSettings.Click += ButtonExportSettings_Click;
+            _buttonImportSettings.Click += ButtonImportSettings_Click;
+
+            _toolTip.SetToolTip(_buttonExportSettings, "Save your current settings to a .json file you can share.");
+            _toolTip.SetToolTip(_buttonImportSettings, "Load settings from a .json file (for example from a friend).");
+
+            content.Controls.Add(_buttonExportSettings);
+            content.Controls.Add(_buttonImportSettings);
+
+            // Center tutorial text and keep buttons at bottom
             content.Resize += (s, e) =>
             {
                 CenterInnerPanel(layout, content);
 
                 int margin = 20;
+
+                // bottom-right: RESET ALL
                 _buttonResetAll.Location = new Point(
                     content.ClientSize.Width - _buttonResetAll.Width - margin,
                     content.ClientSize.Height - _buttonResetAll.Height - margin);
+
+                // bottom-left: Export / Import
+                _buttonExportSettings.Location = new Point(
+                    margin,
+                    content.ClientSize.Height - _buttonExportSettings.Height - margin);
+
+                _buttonImportSettings.Location = new Point(
+                    _buttonExportSettings.Right + 10,
+                    _buttonExportSettings.Top);
             };
 
             // Initial positioning
             CenterInnerPanel(layout, content);
+            int initMargin = 20;
+
             _buttonResetAll.Location = new Point(
-                content.ClientSize.Width - _buttonResetAll.Width - 20,
-                content.ClientSize.Height - _buttonResetAll.Height - 20);
+                content.ClientSize.Width - _buttonResetAll.Width - initMargin,
+                content.ClientSize.Height - _buttonResetAll.Height - initMargin);
+
+            _buttonExportSettings.Location = new Point(
+                initMargin,
+                content.ClientSize.Height - _buttonExportSettings.Height - initMargin);
+
+            _buttonImportSettings.Location = new Point(
+                _buttonExportSettings.Right + 10,
+                _buttonExportSettings.Top);
 
             _pageTutorial.Controls.Add(content);
             _pageTutorial.Controls.Add(header);
         }
+
 
         private Button CreateFlatButton(string text, int width, int height)
         {
@@ -2001,8 +2089,8 @@ namespace MouseSliderApp
                 thatcher.PrimaryWeapons.Add(new WeaponInfo("AR33", "W_AR33.png"));
                 thatcher.PrimaryWeapons.Add(new WeaponInfo("L85A2", "W_L85A2.png"));
                 thatcher.PrimaryWeapons.Add(new WeaponInfo("M590A1", "W_M590A1.png"));
-                thatcher.SecondaryWeapons.Add(new WeaponInfo("P226 Mk 25", "W_P226MK25.png"));
                 thatcher.PrimaryWeapons.Add(new WeaponInfo("PMR90A2", "W_PMR90A2.png"));
+                thatcher.SecondaryWeapons.Add(new WeaponInfo("P226 Mk 25", "W_P226MK25.png"));
                 thatcher.SecondaryWeapons.Add(new WeaponInfo("SMG-11", "W_SMG11.png"));
                 thatcher.SelectedPrimaryIndex = 0;
                 thatcher.SelectedSecondaryIndex = 0;
@@ -2130,7 +2218,6 @@ namespace MouseSliderApp
                 blackbeard.SecondaryWeapons.Clear();
                 blackbeard.PrimaryWeapons.Add(new WeaponInfo("MK17 CQB", "W_MK17CQB.png"));
                 blackbeard.PrimaryWeapons.Add(new WeaponInfo("SR-25", "W_SR25.png"));
-                //blackbeard.SecondaryWeapons.Add(new WeaponInfo("D-50", "W_D50.png"));
                 blackbeard.SelectedPrimaryIndex = 0;
                 blackbeard.SelectedSecondaryIndex = 0;
             }
@@ -2959,19 +3046,56 @@ namespace MouseSliderApp
             try
             {
                 var list = new List<ProfileData>();
+
                 foreach (var p in _profiles)
                 {
-                    list.Add(new ProfileData
+                    var data = new ProfileData
                     {
                         Category = p.Category,
                         Index = p.Index,
+
+                        // old per-profile values (still used)
                         Horizontal1 = p.Horizontal1,
                         Vertical1 = p.Vertical1,
                         Horizontal2 = p.Horizontal2,
                         Vertical2 = p.Vertical2,
                         Key1 = p.Key1,
-                        Key2 = p.Key2
-                    });
+                        Key2 = p.Key2,
+
+                        // NEW: which weapon is selected
+                        SelectedPrimaryIndex = p.SelectedPrimaryIndex,
+                        SelectedSecondaryIndex = p.SelectedSecondaryIndex
+                    };
+
+                    // --- Save recoil for each PRIMARY weapon ---
+                    for (int i = 0; i < p.PrimaryWeapons.Count; i++)
+                    {
+                        var w = p.PrimaryWeapons[i];
+
+                        data.Weapons.Add(new WeaponData
+                        {
+                            Slot = "Primary",
+                            Index = i,
+                            Horizontal = w.Horizontal,
+                            Vertical = w.Vertical
+                        });
+                    }
+
+                    // --- Save recoil for each SECONDARY weapon ---
+                    for (int i = 0; i < p.SecondaryWeapons.Count; i++)
+                    {
+                        var w = p.SecondaryWeapons[i];
+
+                        data.Weapons.Add(new WeaponData
+                        {
+                            Slot = "Secondary",
+                            Index = i,
+                            Horizontal = w.Horizontal,
+                            Vertical = w.Vertical
+                        });
+                    }
+
+                    list.Add(data);
                 }
 
                 var options = new JsonSerializerOptions { WriteIndented = true };
@@ -2987,6 +3111,7 @@ namespace MouseSliderApp
                     MessageBoxIcon.Warning);
             }
         }
+
 
         private void LoadProfilesFromFile()
         {
@@ -3005,12 +3130,37 @@ namespace MouseSliderApp
                         p.Category == data.Category && p.Index == data.Index);
                     if (p == null) continue;
 
+                    // --- Old fields (still important) ---
                     p.Horizontal1 = data.Horizontal1;
                     p.Vertical1 = data.Vertical1;
                     p.Horizontal2 = data.Horizontal2;
                     p.Vertical2 = data.Vertical2;
                     p.Key1 = data.Key1;
                     p.Key2 = data.Key2;
+
+                    // --- NEW: selected weapon indices ---
+                    p.SelectedPrimaryIndex = data.SelectedPrimaryIndex;
+                    p.SelectedSecondaryIndex = data.SelectedSecondaryIndex;
+
+                    // --- NEW: set weapon recoil values ---
+                    if (data.Weapons != null)
+                    {
+                        foreach (var wData in data.Weapons)
+                        {
+                            // choose the correct list for this slot
+                            List<WeaponInfo> listRef =
+                                string.Equals(wData.Slot, "Secondary", StringComparison.OrdinalIgnoreCase)
+                                    ? p.SecondaryWeapons
+                                    : p.PrimaryWeapons;
+
+                            // make sure index is valid
+                            if (wData.Index >= 0 && wData.Index < listRef.Count)
+                            {
+                                listRef[wData.Index].Horizontal = wData.Horizontal;
+                                listRef[wData.Index].Vertical = wData.Vertical;
+                            }
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -3022,6 +3172,7 @@ namespace MouseSliderApp
                     MessageBoxIcon.Warning);
             }
         }
+
 
         private void Form1_FormClosing(object? sender, FormClosingEventArgs e)
         {
@@ -3064,6 +3215,7 @@ namespace MouseSliderApp
             _currentProfile = null;
             _labelSelectedProfile.Text = "Selected profile: (none)";
             _labelSelectedSetup.Text = "Setup: (none)";
+            UpdateSetupSummaryLabels();
 
             if (_textKey1 != null) _textKey1.Text = "None";
             if (_textKey2 != null) _textKey2.Text = "None";
@@ -3420,26 +3572,32 @@ namespace MouseSliderApp
             var primary = _currentProfile.SelectedPrimaryWeapon;
             var secondary = _currentProfile.SelectedSecondaryWeapon;
 
+            // ---- Setup 1 (Primary) ----
             if (primary != null)
             {
                 _labelSetup1Summary.Text =
-                    $"Primary ({primary.Name}): H = {primary.Horizontal:0.000}, V = {primary.Vertical:0.000}";
+                    $"PRIMARY ({primary.Name}) – H = {primary.Horizontal:0.000}, V = {primary.Vertical:0.000}";
             }
             else
             {
-                _labelSetup1Summary.Text = "Primary: H = 0.000, V = 0.000";
+                _labelSetup1Summary.Text =
+                    $"PRIMARY – H = {_currentProfile.Horizontal1:0.000}, V = {_currentProfile.Vertical1:0.000}";
             }
 
+            // ---- Setup 2 (Secondary) ----
             if (secondary != null)
             {
                 _labelSetup2Summary.Text =
-                    $"Secondary ({secondary.Name}): H = {secondary.Horizontal:0.000}, V = {secondary.Vertical:0.000}";
+                    $"SECONDARY ({secondary.Name}) – H = {secondary.Horizontal:0.000}, V = {secondary.Vertical:0.000}";
             }
             else
             {
-                _labelSetup2Summary.Text = "Secondary: H = 0.000, V = 0.000";
+                _labelSetup2Summary.Text =
+                    $"SECONDARY – H = {_currentProfile.Horizontal2:0.000}, V = {_currentProfile.Vertical2:0.000}";
             }
+
         }
+
 
         private void LoadProfile(Profile profile)
         {
@@ -3549,6 +3707,91 @@ namespace MouseSliderApp
                 MessageBoxIcon.Information);
         }
 
+        private void ButtonExportSettings_Click(object? sender, EventArgs e)
+        {
+            try
+            {
+                // Make sure the latest values are on disk
+                SaveProfilesToFile();
+
+                using (var dialog = new SaveFileDialog())
+                {
+                    dialog.Title = "Export settings";
+                    dialog.Filter = "GM R6 settings (*.json)|*.json|All files (*.*)|*.*";
+                    dialog.FileName = "GM_R6_Settings.json";
+
+                    if (dialog.ShowDialog(this) != DialogResult.OK)
+                        return;
+
+                    // Copy current profiles.json to chosen file
+                    File.Copy(_dataFilePath, dialog.FileName, true);
+
+                    MessageBox.Show(
+                        "Settings exported successfully.\nYou can share this .json file with your friends.",
+                        "Export settings",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Failed to export settings:\n" + ex.Message,
+                    "Export error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+        }
+
+        private void ButtonImportSettings_Click(object? sender, EventArgs e)
+        {
+            try
+            {
+                using (var dialog = new OpenFileDialog())
+                {
+                    dialog.Title = "Import settings";
+                    dialog.Filter = "GM R6 settings (*.json)|*.json|All files (*.*)|*.*";
+
+                    if (dialog.ShowDialog(this) != DialogResult.OK)
+                        return;
+
+                    var confirm = MessageBox.Show(
+                        "This will replace ALL your current speeds, keybinds and weapon recoil\n" +
+                        "with the settings from the selected file.\n\nContinue?",
+                        "Import settings",
+                        MessageBoxButtons.YesNo,
+                        MessageBoxIcon.Warning);
+
+                    if (confirm != DialogResult.Yes)
+                        return;
+
+                    // Overwrite local profiles.json with the selected file
+                    File.Copy(dialog.FileName, _dataFilePath, true);
+
+                    // Reload profiles from the new file
+                    LoadProfilesFromFile();
+
+                    // Refresh UI (will re-select the first profile of current side)
+                    ShowCategory(_currentCategory);
+
+                    MessageBox.Show(
+                        "Settings imported successfully.",
+                        "Import settings",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Failed to import settings:\n" + ex.Message,
+                    "Import error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+        }
+
+
         // Per-profile reset
         private void ButtonResetProfile_Click(object? sender, EventArgs e)
         {
@@ -3583,6 +3826,7 @@ namespace MouseSliderApp
 
             UpdateSetupSummaryLabels();
             UpdateWeaponUi();
+            SaveProfilesToFile();
 
             MessageBox.Show(
                 $"Profile {_currentProfile.Name} has been reset.",
@@ -3760,6 +4004,9 @@ namespace MouseSliderApp
             ApplyProfileSetup(_currentProfile, 1);
             UpdateSetupSummaryLabels();
 
+            // ⬇️ add this line:
+            SaveProfilesToFile();
+
             MessageBox.Show(
                 $"Saved Setup 1 for {_currentProfile.Name}",
                 "Setup 1 saved",
@@ -3795,6 +4042,9 @@ namespace MouseSliderApp
             ApplyProfileSetup(_currentProfile, 2);
             UpdateSetupSummaryLabels();
 
+            // ⬇️ add this line:
+            SaveProfilesToFile();
+
             MessageBox.Show(
                 $"Saved Setup 2 for {_currentProfile.Name}",
                 "Setup 2 saved",
@@ -3811,35 +4061,36 @@ namespace MouseSliderApp
 
             double h;
             double v;
-
             WeaponInfo? weapon = null;
 
             if (setupIndex == 1)
             {
+                // 1) start with the values that are saved to JSON
+                h = profile.Horizontal1;
+                v = profile.Vertical1;
+
+                // 2) if the selected PRIMARY weapon has its own values
+                //    and they are not both 0, use those instead
                 weapon = profile.SelectedPrimaryWeapon;
-                if (weapon != null)
+                if (weapon != null && (weapon.Horizontal != 0.0 || weapon.Vertical != 0.0))
                 {
                     h = weapon.Horizontal;
                     v = weapon.Vertical;
-                }
-                else
-                {
-                    h = profile.Horizontal1;
-                    v = profile.Vertical1;
                 }
             }
             else
             {
+                // 1) start with the values that are saved to JSON
+                h = profile.Horizontal2;
+                v = profile.Vertical2;
+
+                // 2) if the selected SECONDARY weapon has its own values
+                //    and they are not both 0, use those instead
                 weapon = profile.SelectedSecondaryWeapon;
-                if (weapon != null)
+                if (weapon != null && (weapon.Horizontal != 0.0 || weapon.Vertical != 0.0))
                 {
                     h = weapon.Horizontal;
                     v = weapon.Vertical;
-                }
-                else
-                {
-                    h = profile.Horizontal2;
-                    v = profile.Vertical2;
                 }
             }
 
@@ -3865,6 +4116,7 @@ namespace MouseSliderApp
                 UpdateWeaponUi();
             }
         }
+
 
         // ==========================================================
         // Weapon selection logic
@@ -4140,8 +4392,9 @@ namespace MouseSliderApp
 
         private void ApplyMouseMovement()
         {
-            _accumulatedX += _horizontalSpeed;
-            _accumulatedY += _verticalSpeed;
+            _accumulatedX += _horizontalSpeed * HorizontalStrengthMultiplier;
+            _accumulatedY += _verticalSpeed * VerticalStrengthMultiplier;
+
 
             int dx = (int)_accumulatedX;
             int dy = (int)_accumulatedY;
