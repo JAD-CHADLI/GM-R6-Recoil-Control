@@ -175,9 +175,7 @@ Export/Import just copy that configuration to/from another `.json`.
 
 ---
 
-## ⚠️ Disclaimer
-
-> This tool simulates mouse movement and can be considered a **cheat or macro** in many games.  
+## ⚠️ Disclaimer 
 > Use it **at your own risk** and **only** where it’s allowed  
 > (e.g. offline, custom games, testing, or environments that explicitly permit such tools).
 
