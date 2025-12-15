@@ -18,7 +18,7 @@ namespace MouseSliderApp
         private Panel _pageProfiles = null!;
         private Panel _pageSettings = null!;
         private Panel _pageAbout = null!;
-        private Panel _pageTutorial = null!;
+        private Panel _pageTutorial = null!;aaaa
 
         // Container + custom scrollbar for profiles
         private Panel _profilesContainer = null!;
