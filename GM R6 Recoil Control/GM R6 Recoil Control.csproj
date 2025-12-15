@@ -7,7 +7,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
-aaaa
+
   <ItemGroup>
     <None Remove="AppIcon.ico" />
     <None Remove="Images\AboutLogo.png" />
