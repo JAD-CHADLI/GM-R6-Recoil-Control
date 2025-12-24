@@ -10,7 +10,7 @@
 
   <ItemGroup>
     <None Remove="AppIcon.ico" />
-    <None Remove="Images\AboutLogo.png" />a
+    <None Remove="Images\AboutLogo.png" />
     <None Remove="Images\AppLogo.png" />
     <None Remove="Images\A_Ace.png" />
     <None Remove="Images\A_Amaru.png" />
