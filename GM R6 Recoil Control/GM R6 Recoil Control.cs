@@ -7,7 +7,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Windows.Forms;
-using System.Reflection; // for SetDoubleBuffered
+using System.Reflection; // for SetDoubleBuffereda
 using System.Drawing.Drawing2D;
 
 namespace MouseSliderApp
