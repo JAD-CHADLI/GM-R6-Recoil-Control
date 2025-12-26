@@ -10,7 +10,7 @@ using System.Windows.Forms;
 using System.Reflection; // for SetDoubleBuffered
 using System.Drawing.Drawing2D;
 
-namespace MouseSliderAppa
+namespace MouseSliderApp
 {
     public class Form1 : Form
     {
