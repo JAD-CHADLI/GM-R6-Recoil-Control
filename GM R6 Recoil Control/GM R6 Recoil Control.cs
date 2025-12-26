@@ -25,7 +25,7 @@ namespace MouseSliderApp
         private Panel _profilesScrollTrack = null!;   // fake scrollbar track
         private Panel _profilesScrollThumb = null!;   // fake scrollbar thumb
         private int _profilesScrollOffset = 0;
-        private int _profilesMaxScrollOffset = 0;
+        private int _profilesMaxScrollOffset = 0;Updates
         private const int ProfilesScrollStep = 40;
 
         // ====== Movement controls (Settings page) ======
